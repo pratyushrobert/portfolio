@@ -1,0 +1,155 @@
+.window {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: var(--window-bg, var(--bg));
+  border: 1px solid var(--window-border, var(--border));
+  border-radius: var(--window-radius, 8px);
+  box-shadow: var(--window-shadow, var(--shadow));
+  overflow: hidden;
+  min-width: 300px;
+  min-height: 200px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  contain: layout style paint;
+}
+
+.window.focused {
+  box-shadow: var(--window-shadow-focused, 0 0 0 1px var(--accent), var(--shadow));
+  border-color: var(--accent-border);
+}
+
+.window.maximized {
+  border-radius: 0;
+  border: none;
+  top: var(--panel-height, 40px) !important;
+  left: 0 !important;
+}
+
+.window-titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: var(--titlebar-height, 32px);
+  padding: 0 12px;
+  background: var(--titlebar-bg, var(--accent-bg));
+  border-bottom: 1px solid var(--titlebar-border, var(--border));
+  user-select: none;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.window:focus-within .window-titlebar,
+.window.focused .window-titlebar {
+  background: var(--titlebar-bg-focused, var(--accent-bg));
+}
+
+.window-titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.window-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.window-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.window-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.window-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.window-control:hover {
+  background: var(--control-hover-bg, rgba(0, 0, 0, 0.1));
+}
+
+.window-control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.window-control.minimize:hover {
+  background: var(--minimize-hover, rgba(76, 175, 80, 0.2));
+  color: var(--minimize-color, #4caf50);
+}
+
+.window-control.maximize:hover {
+  background: var(--maximize-hover, rgba(255, 193, 7, 0.2));
+  color: var(--maximize-color, #ffc107);
+}
+
+.window-control.close:hover {
+  background: var(--close-hover, rgba(244, 67, 54, 0.2));
+  color: var(--close-color, #f44336);
+}
+
+.window-content {
+  flex: 1;
+  overflow: auto;
+  background: var(--window-content-bg, var(--bg));
+}
+
+.window-resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+}
+
+.window-resize-handle.se {
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+}
+
+.window-resize-handle.s {
+  bottom: 0;
+  left: 16px;
+  right: 16px;
+  height: 8px;
+  cursor: s-resize;
+}
+
+.window-resize-handle.e {
+  right: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 8px;
+  cursor: e-resize;
+}
+
+.window-resize-handle:hover {
+  background: var(--accent-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  .window-control:hover {
+    background: var(--control-hover-bg, rgba(255, 255, 255, 0.1));
+  }
+}

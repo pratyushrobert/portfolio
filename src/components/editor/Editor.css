@@ -1,0 +1,223 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--window-content-bg, var(--bg));
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.editor.loading,
+.editor.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.editor.loading .spinning {
+  animation: spin 1s linear infinite;
+  color: var(--accent);
+}
+
+.editor.error {
+  color: #f44336;
+}
+
+.editor.error .error-path {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--toolbar-bg, var(--accent-bg));
+  border-bottom: 1px solid var(--toolbar-border, var(--border));
+  flex-shrink: 0;
+}
+
+.editor-file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.editor-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.editor-file-details {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.editor-file-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dirty-indicator {
+  color: #f9e2af;
+  font-size: 14px;
+  line-height: 1;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.saved-indicator {
+  color: #a6e3a1;
+  font-size: 14px;
+  line-height: 1;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.editor-file-path {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.editor-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--btn-bg, var(--code-bg));
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.editor-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.editor-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editor-btn.save-btn {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.editor-btn.save-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: var(--toolbar-bg, var(--accent-bg));
+  border-bottom: 1px solid var(--toolbar-border, var(--border));
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.editor-stats {
+  display: flex;
+  gap: 16px;
+  font-family: var(--mono);
+}
+
+.editor-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.editor-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.editor-textarea {
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: var(--editor-bg, var(--bg));
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+  box-sizing: border-box;
+}
+
+.editor-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.editor-textarea:focus {
+  outline: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .editor-btn {
+    background: var(--btn-bg, #1e1e2e);
+    border-color: var(--border);
+  }
+  .editor-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .editor-btn.save-btn {
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
+  .editor-textarea {
+    background: var(--editor-bg, #1e1e2e);
+  }
+}

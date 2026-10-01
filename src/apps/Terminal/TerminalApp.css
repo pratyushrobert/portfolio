@@ -1,0 +1,36 @@
+.terminal-app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.terminal-app .xterm {
+  height: 100%;
+}
+
+.terminal-app .xterm-viewport {
+  background: #1e1e2e;
+}
+
+.terminal-app .xterm-screen {
+  background: #1e1e2e;
+}
+
+.terminal-app .xterm-cursor {
+  background: #f5e0dc !important;
+}
+
+.terminal-app .xterm-selection {
+  background: rgba(137, 180, 250, 0.3) !important;
+}
+
+/* Links */
+.terminal-app .xterm-link {
+  color: #89b4fa;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.terminal-app .xterm-link:hover {
+  color: #b4befe;
+}

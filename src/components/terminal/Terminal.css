@@ -1,0 +1,36 @@
+.terminal {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.terminal .xterm {
+  height: 100%;
+}
+
+.terminal .xterm-viewport {
+  background: #1e1e2e;
+}
+
+.terminal .xterm-screen {
+  background: #1e1e2e;
+}
+
+.terminal .xterm-cursor {
+  background: #f5e0dc !important;
+}
+
+.terminal .xterm-selection {
+  background: rgba(137, 180, 250, 0.3) !important;
+}
+
+/* Links */
+.terminal .xterm-link {
+  color: #89b4fa;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.terminal .xterm-link:hover {
+  color: #b4befe;
+}

@@ -1,0 +1,69 @@
+.os-desktop-icons {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 44px; /* Account for taskbar */
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.os-desktop-icon {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 80px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.1s ease, transform 0.1s ease;
+  user-select: none;
+}
+
+.os-desktop-icon:hover {
+  background: var(--icon-hover, rgba(137, 180, 250, 0.1));
+}
+
+.os-desktop-icon.selected {
+  background: var(--icon-selected, rgba(137, 180, 250, 0.2));
+  border: 1px solid var(--accent, #89b4fa);
+}
+
+.os-desktop-icon:active {
+  transform: scale(0.95);
+}
+
+.os-desktop-icon-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: var(--text-primary, #cdd6f4);
+}
+
+.os-desktop-icon-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary, #cdd6f4);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Selection rectangle */
+.os-desktop-selection {
+  position: absolute;
+  border: 1px dashed var(--accent, #89b4fa);
+  background: rgba(137, 180, 250, 0.1);
+  pointer-events: none;
+  z-index: 100;
+}
