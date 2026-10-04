@@ -7,7 +7,8 @@ export function createFileNode(
   parentId: string,
   content: string = '',
   mimeType: string = 'text/plain',
-  isBinary: boolean = false
+  isBinary: boolean = false,
+  assetPath?: string
 ): FileNode {
   const now = Date.now();
   return {
@@ -23,6 +24,7 @@ export function createFileNode(
     mimeType,
     size: new Blob([content]).size,
     isBinary,
+    assetPath,
   };
 }
 
@@ -31,7 +33,8 @@ export function createBinaryFileNode(
   parentId: string,
   mimeType: string,
   size: number,
-  storageKey: string
+  storageKey: string,
+  assetPath?: string
 ): FileNode {
   const now = Date.now();
   return {
@@ -48,6 +51,32 @@ export function createBinaryFileNode(
     size,
     isBinary: true,
     storageKey,
+    assetPath,
+  };
+}
+
+export function createBuiltInBinaryFileNode(
+  name: string,
+  parentId: string,
+  mimeType: string,
+  size: number,
+  assetPath: string
+): FileNode {
+  const now = Date.now();
+  return {
+    id: uuidv4(),
+    name,
+    type: 'file',
+    parentId,
+    createdAt: now,
+    modifiedAt: now,
+    permissions: 'rw-r--r--',
+    owner: 'user',
+    content: '',
+    mimeType,
+    size,
+    isBinary: true,
+    assetPath,
   };
 }
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Folder, File, Image, Video, FileText, ChevronRight, ChevronDown, Home, ArrowUp, Search, Grid, List, MoreVertical } from 'lucide-react';
+import { FolderOpen, Folder, File, Image, Video, FileText, ChevronRight, ChevronDown, Home, ArrowUp, ArrowLeft, ArrowRight, RefreshCw, Upload, FolderPlus, FilePlus, Eye, EyeOff, Grid, List, Search, List as ListIcon, MoreVertical, Code, FileImage, FileVideo, FileAudio, FileCode, FileJson, FileText as FileTextIcon } from 'lucide-react';
 import { vfs } from '../../../lib/vfs';
 import type { AnyVFSNode } from '../../../types/vfs';
-import { useWindowStore } from '../../../hooks/useWindows';
+import { useWindowStore } from '../../../stores/useWindowStore';
+import { getAppIcon, getFileIcon } from '../../../lib/icons';
+import { Icon } from '../../ui/Icon';
 import './FileManagerApp.css';
 
 interface FileManagerAppProps {
@@ -10,7 +12,7 @@ interface FileManagerAppProps {
 }
 
 export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
-  const { updateWindowSize } = useWindowStore();
+  const { updateWindowSize, openWindowWithParams } = useWindowStore();
   const [currentPath, setCurrentPath] = useState(vfs.getCwd());
   const [entries, setEntries] = useState<AnyVFSNode[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -22,16 +24,21 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
 
   // Load directory contents
   const loadDirectory = useCallback((path: string) => {
+    console.log('[FileManager] loadDirectory called with:', path);
     const result = vfs.list(path);
+    console.log('[FileManager] vfs.list result:', result);
     if (result.success) {
       let items = result.data!;
       if (searchQuery) {
         items = items.filter((n) => n.name.toLowerCase().includes(searchQuery.toLowerCase()));
       }
+      console.log('[FileManager] items after filter:', items.map(i => i.name));
       setEntries(items);
       setCurrentPath(path);
       setAddressBar(path);
       setSelectedId(null);
+    } else {
+      console.error('[FileManager] vfs.list failed:', result.error);
     }
   }, [searchQuery]);
 
@@ -75,22 +82,23 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
 
   // Open file with appropriate app
   const openFile = (node: AnyVFSNode) => {
-    const { openWindow } = useWindowStore.getState();
     const mimeType = node.mimeType;
+    const filePath = currentPath + '/' + node.name;
+    const appId = mimeType.startsWith('image/') ? 'image-viewer' : mimeType.startsWith('video/') ? 'video-player' : mimeType === 'application/pdf' ? 'resume-viewer' : mimeType.startsWith('text/') || mimeType === 'application/json' ? 'editor' : 'terminal';
+    const windowConfig = {
+      id: `${appId}-${Date.now()}`,
+      appId,
+      title: node.name,
+      icon: getAppIcon(appId, mimeType),
+      x: 100 + Math.random() * 200,
+      y: 100 + Math.random() * 150,
+      width: 800,
+      height: 600,
+      isMinimized: false,
+      isMaximized: false,
+    };
 
-    if (mimeType.startsWith('image/')) {
-      openWindow('image-viewer', { file: node, path: currentPath + '/' + node.name });
-    } else if (mimeType.startsWith('video/')) {
-      openWindow('video-player', { file: node, path: currentPath + '/' + node.name });
-    } else if (mimeType === 'application/pdf') {
-      openWindow('resume-viewer', { file: node, path: currentPath + '/' + node.name });
-    } else if (mimeType.startsWith('text/') || mimeType === 'application/json') {
-      openWindow('terminal');
-      // Could cat the file in terminal
-    } else {
-      // Default to terminal cat
-      openWindow('terminal');
-    }
+    openWindowWithParams(windowConfig, { file: node, path: filePath });
   };
 
   // Address bar submit
@@ -106,15 +114,24 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
 
   // Get icon for file type
   const getFileIcon = (node: AnyVFSNode) => {
-    if (node.type === 'directory') return <Folder className="file-icon folder" size={24} />;
-    if (node.type === 'symlink') return <File className="file-icon symlink" size={24} />;
+    if (node.type === 'directory') return <Icon icon={FolderOpen} size={24} className="file-icon folder" />;
+    if (node.type === 'symlink') return <Icon icon={File} size={24} className="file-icon symlink" />;
 
-    const mime = node.mimeType;
-    if (mime.startsWith('image/')) return <Image className="file-icon image" size={24} />;
-    if (mime.startsWith('video/')) return <Video className="file-icon video" size={24} />;
-    if (mime === 'application/pdf') return <FileText className="file-icon pdf" size={24} />;
-    if (mime.startsWith('text/')) return <FileText className="file-icon text" size={24} />;
-    return <File className="file-icon" size={24} />;
+    const IconComponent = getFileIconFromMime(node.mimeType, false);
+    return <Icon icon={IconComponent} size={24} className="file-icon" />;
+  };
+
+  // Wrapper to avoid naming conflict with imported function
+  const getFileIconFromMime = (mimeType: string, isDirectory: boolean) => {
+    if (isDirectory) return FolderOpen;
+    if (mimeType.startsWith('image/')) return Image;
+    if (mimeType.startsWith('video/')) return Video;
+    if (mimeType === 'application/pdf') return FileTextIcon;
+    if (mimeType.startsWith('text/')) return FileTextIcon;
+    if (mimeType.startsWith('audio/')) return FileAudio;
+    if (mimeType === 'application/json') return FileJson;
+    if (mimeType.startsWith('application/')) return FileCode;
+    return File;
   };
 
   // Format file size
@@ -151,10 +168,27 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
       <div className="fm-toolbar">
         <div className="fm-toolbar-left">
           <button className="fm-btn" onClick={goUp} title="Go up" disabled={currentPath === '/'}>
-            <ArrowUp size={16} />
+            <Icon icon={ArrowUp} size={16} />
           </button>
           <button className="fm-btn" onClick={() => navigate('/home/user')} title="Home">
-            <Home size={16} />
+            <Icon icon={Home} size={16} />
+          </button>
+        </div>
+        <div className="fm-toolbar-center">
+          <button className="fm-btn" onClick={() => {}} title="Back" disabled>
+            <Icon icon={ArrowLeft} size={16} />
+          </button>
+          <button className="fm-btn" onClick={() => {}} title="Forward" disabled>
+            <Icon icon={ArrowRight} size={16} />
+          </button>
+          <button className="fm-btn" onClick={goUp} title="Up" disabled={currentPath === '/'}>
+            <Icon icon={ArrowUp} size={16} />
+          </button>
+          <button className="fm-btn" onClick={() => navigate('/home/user')} title="Home">
+            <Icon icon={Home} size={16} />
+          </button>
+          <button className="fm-btn" onClick={() => loadDirectory(currentPath)} title="Refresh">
+            <Icon icon={RefreshCw} size={16} />
           </button>
         </div>
         <form className="fm-address-bar" onSubmit={handleAddressSubmit}>
@@ -167,15 +201,27 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
           />
         </form>
         <div className="fm-toolbar-right">
+          <button className="fm-btn" onClick={() => {}} title="Upload" disabled>
+            <Icon icon={Upload} size={16} />
+          </button>
+          <button className="fm-btn" onClick={() => {}} title="New Folder" disabled>
+            <Icon icon={FolderPlus} size={16} />
+          </button>
+          <button className="fm-btn" onClick={() => {}} title="New File" disabled>
+            <Icon icon={FilePlus} size={16} />
+          </button>
+          <button className="fm-btn" onClick={() => setShowHidden(!showHidden)} title={showHidden ? 'Hide hidden files' : 'Show hidden files'}>
+            {showHidden ? <Icon icon={EyeOff} size={16} /> : <Icon icon={Eye} size={16} />}
+          </button>
           <button className="fm-btn" onClick={() => setSidebarOpen(!sidebarOpen)} title="Toggle sidebar">
-            <Grid size={16} />
+            <Icon icon={Grid} size={16} />
           </button>
           <div className="fm-view-toggle">
             <button className={`fm-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')} title="Grid view">
-              <Grid size={16} />
+              <Icon icon={Grid} size={16} />
             </button>
             <button className={`fm-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')} title="List view">
-              <List size={16} />
+              <Icon icon={ListIcon} size={16} />
             </button>
           </div>
         </div>
@@ -195,7 +241,7 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
                       className={`fm-sidebar-item ${currentPath.startsWith(item.path) ? 'active' : ''}`}
                       onClick={() => navigate(item.path)}
                     >
-                      <item.icon className="lucide-icon" size={16} />
+                      <Icon icon={item.icon} size={16} className="lucide-icon" />
                       <span>{item.name}</span>
                     </button>
                   </li>
@@ -207,7 +253,7 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
               <ul>
                 <li>
                   <button className="fm-sidebar-item" onClick={() => navigate('/')}>
-                    <File className="lucide-icon" size={16} />
+                    <Icon icon={File} size={16} className="lucide-icon" />
                     <span>Filesystem</span>
                   </button>
                 </li>
@@ -220,7 +266,7 @@ export const FileManagerApp: React.FC<FileManagerAppProps> = ({ instance }) => {
         <div className={`fm-file-list ${viewMode}`}>
           {entries.length === 0 ? (
             <div className="fm-empty">
-              <Folder className="lucide-icon" size={48} />
+              <Icon icon={Folder} size={48} className="lucide-icon" />
               <p>This folder is empty</p>
             </div>
           ) : (

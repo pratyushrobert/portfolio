@@ -3,6 +3,7 @@ import {
   createDirectoryNode,
   createSymlinkNode,
   createBinaryFileNode,
+  createBuiltInBinaryFileNode,
   isFileNode,
   isDirectoryNode,
   isSymlinkNode,
@@ -23,14 +24,23 @@ export class VirtualFS {
   private state: VFSState;
   private listeners: Set<() => void> = new Set();
 
-  constructor() {
-    const saved = loadFromLocalStorage();
-    if (saved) {
-      this.state = saved;
-    } else {
-      this.state = this.createInitialState();
-      saveToLocalStorage(this.state);
+  private static _instance: VirtualFS | null = null;
+
+  private constructor() {
+    // Clear localStorage to force fresh state
+    localStorage.removeItem('mimios-vfs');
+    localStorage.removeItem('mimios-vfs-version');
+    console.log('[VFS] Constructor called - creating initial state');
+    this.state = this.createInitialState();
+    saveToLocalStorage(this.state);
+    console.log('[VFS] Initial state created, cwd:', this.state.cwd, 'nodes:', Object.keys(this.state.nodes).length);
+  }
+
+  static getInstance(): VirtualFS {
+    if (!VirtualFS._instance) {
+      VirtualFS._instance = new VirtualFS();
     }
+    return VirtualFS._instance;
   }
 
   private createInitialState(): VFSState {
@@ -43,12 +53,45 @@ export class VirtualFS {
     const projects = createDirectoryNode('projects', user.id);
     const images = createDirectoryNode('images', user.id);
     const videos = createDirectoryNode('videos', user.id);
+    const skills = createDirectoryNode('skills', user.id);
+    const experience = createDirectoryNode('experience', user.id);
+    const certificates = createDirectoryNode('certificates', user.id);
 
     // Create .mimi directory
     const mimiDir = createDirectoryNode('.mimi', user.id);
 
+    // Create built-in hero image
+    const heroImage = createBuiltInBinaryFileNode(
+      'hero.png',
+      images.id,
+      'image/png',
+      13057, // actual file size
+      '/portfolio/images/hero.png'
+    );
+
+    // Create built-in react logo
+    const reactLogo = createBuiltInBinaryFileNode(
+      'react.svg',
+      images.id,
+      'image/svg+xml',
+      4126, // actual file size
+      '/portfolio/images/react.svg'
+    );
+
+    // Create built-in vite logo
+    const viteLogo = createBuiltInBinaryFileNode(
+      'vite.svg',
+      images.id,
+      'image/svg+xml',
+      8709, // actual file size
+      '/portfolio/images/vite.svg'
+    );
+
     // Add children to user
-    user.children = [documents.id, projects.id, images.id, videos.id, mimiDir.id];
+    user.children = [documents.id, projects.id, images.id, videos.id, skills.id, experience.id, certificates.id, mimiDir.id];
+
+    // Add built-in images to images directory
+    images.children = [heroImage.id, reactLogo.id, viteLogo.id];
     home.children = [user.id];
     root.children = [home.id];
 
@@ -86,19 +129,156 @@ Email:     pratyush@example.com
 Website:   https://pratyush.dev`
     );
 
-    // Create resume.pdf placeholder (text content since we can't store binary)
-    const resume = createFileNode(
+    // Create resume.pdf - built-in static asset
+    const resume = createBuiltInBinaryFileNode(
       'resume.pdf',
       user.id,
-      `[PDF Document - Resume]
-
-This is a placeholder for the resume PDF.
-In a real implementation, this would be a base64-encoded binary file.
-
-To view: Use the PDF viewer app or download via the file manager.`,
       'application/pdf',
-      true
+      0, // size unknown for static asset
+      '/portfolio/documents/resume.pdf'
     );
+
+    // Create README.md for projects
+    const projectsReadme = createFileNode(
+      'README.md',
+      projects.id,
+      `# Projects
+
+This directory contains portfolio projects.
+
+Each project has its own subdirectory with relevant files.
+`
+    );
+
+    // Create project subdirectories
+    const secureVaultDir = createDirectoryNode('securevault', projects.id);
+    const nidsDir = createDirectoryNode('nids', projects.id);
+    const attendanceDir = createDirectoryNode('attendance-system', projects.id);
+
+    projects.children = [projectsReadme.id, secureVaultDir.id, nidsDir.id, attendanceDir.id];
+
+    // SecureVault project files
+    const secureVaultReadme = createFileNode(
+      'README.md',
+      secureVaultDir.id,
+      `# SecureVault
+
+A secure password manager with end-to-end encryption.
+
+**Tech Stack:** React, TypeScript, Node.js, PostgreSQL, WebCrypto API
+
+**Features:**
+- Zero-knowledge encryption
+- Cross-device sync
+- Browser extension
+- Mobile responsive
+
+*This is a placeholder project description. Actual project details to be added.`
+    );
+
+    // NIDS project files
+    const nidsReadme = createFileNode(
+      'README.md',
+      nidsDir.id,
+      `# Network Intrusion Detection System (NIDS)
+
+A lightweight network monitoring and intrusion detection system.
+
+**Tech Stack:** Go, eBPF, Prometheus, Grafana
+
+**Features:**
+- Real-time packet analysis
+- Anomaly detection
+- Alerting system
+- Dashboard visualization
+
+*This is a placeholder project description. Actual project details to be added.`
+    );
+
+    // Attendance System project files
+    const attendanceReadme = createFileNode(
+      'README.md',
+      attendanceDir.id,
+      `# Attendance System
+
+An automated attendance tracking system with facial recognition.
+
+**Tech Stack:** Python, OpenCV, FastAPI, PostgreSQL
+
+**Features:**
+- Face recognition check-in
+- Real-time dashboard
+- Export reports
+- Multi-camera support
+
+*This is a placeholder project description. Actual project details to be added.`
+    );
+
+    // Skills file
+    const skillsFile = createFileNode(
+      'skills.md',
+      skills.id,
+      `# Skills
+
+## Languages
+- TypeScript / JavaScript
+- Python
+- Go
+- Rust
+- SQL
+
+## Frontend
+- React / Next.js
+- Vue.js
+- Tailwind CSS
+- WebGL / Three.js
+
+## Backend
+- Node.js / Express / Fastify
+- Go / Gin
+- PostgreSQL / Redis
+- GraphQL / REST
+
+## Infrastructure
+- Docker / Kubernetes
+- AWS / GCP
+- CI/CD (GitHub Actions, GitLab CI)
+- Terraform
+
+## Security
+- Web Application Security
+- Cryptography basics
+- Network monitoring
+
+*This is a placeholder skills list. Actual skills to be added.`
+    );
+
+    // Experience file
+    const experienceFile = createFileNode(
+      'experience.md',
+      experience.id,
+      `# Experience
+
+## [Current/Recent Position]
+**Company** — *Role*
+*Dates*
+
+- Achievement 1
+- Achievement 2
+- Achievement 3
+
+## [Previous Position]
+**Company** — *Role*
+*Dates*
+
+- Achievement 1
+- Achievement 2
+
+*This is a placeholder experience list. Actual experience to be added.`
+    );
+
+    // Certificates directory (empty placeholder)
+    // certificates.children = [];
 
     // Create .mimi explanation file
     const mimiInfo = createFileNode(
@@ -137,6 +317,9 @@ User: pratyush`
         [projects.id]: projects,
         [images.id]: images,
         [videos.id]: videos,
+        [skills.id]: skills,
+        [experience.id]: experience,
+        [certificates.id]: certificates,
         [mimiDir.id]: mimiDir,
         [etc.id]: etc,
         [about.id]: about,
@@ -144,6 +327,15 @@ User: pratyush`
         [resume.id]: resume,
         [mimiInfo.id]: mimiInfo,
         [motd.id]: motd,
+        [projectsReadme.id]: projectsReadme,
+        [secureVaultDir.id]: secureVaultDir,
+        [nidsDir.id]: nidsDir,
+        [attendanceDir.id]: attendanceDir,
+        [secureVaultReadme.id]: secureVaultReadme,
+        [nidsReadme.id]: nidsReadme,
+        [attendanceReadme.id]: attendanceReadme,
+        [skillsFile.id]: skillsFile,
+        [experienceFile.id]: experienceFile,
       },
       rootId: root.id,
       cwd: '/home/pratyush',
@@ -268,11 +460,16 @@ User: pratyush`
 
   list(path?: string): VFSOperationResult<AnyVFSNode[]> {
     const targetPath = path ? this.resolvePath(path) : this.state.cwd;
+    console.log('[VFS] list called with:', path, '-> resolved:', targetPath, 'cwd:', this.state.cwd);
     const node = this.getNodeByPath(targetPath);
+    console.log('[VFS] node found:', node ? {id: node.id, name: node.name, type: node.type, childrenCount: (node as any).children?.length} : 'NOT FOUND');
     if (!node || !isDirectoryNode(node)) {
+      console.error('[VFS] Not a directory:', targetPath);
       return { success: false, error: 'Not a directory' };
     }
-    const children = node.children.map((id) => this.getNode(id)).filter(Boolean) as AnyVFSNode[];
+    const dirNode = node as any; // TypeScript narrowing
+    const children = dirNode.children.map((id: string) => this.getNode(id)).filter(Boolean) as AnyVFSNode[];
+    console.log('[VFS] children found:', children.map(c => ({name: c.name, type: c.type, mimeType: (c as any).mimeType})));
     return { success: true, data: children };
   }
 
@@ -508,7 +705,7 @@ User: pratyush`
   private async copyNode(node: AnyVFSNode, newParentId: string, newName: string): Promise<AnyVFSNode> {
     if (isFileNode(node)) {
       if (node.isBinary && node.storageKey) {
-        // Copy binary data to new IndexedDB entry
+        // Visitor upload - copy binary data to new IndexedDB entry
         const storedFile = await getBinaryFile(node.storageKey);
         if (storedFile) {
           const newStorageKey = generateStorageKey(node.name);
@@ -518,7 +715,8 @@ User: pratyush`
           return copy;
         }
       }
-      const copy = createFileNode(newName, newParentId, node.content, node.mimeType, node.isBinary);
+      // Built-in asset or text file - preserve assetPath
+      const copy = createFileNode(newName, newParentId, node.content, node.mimeType, node.isBinary, node.assetPath);
       this.state.nodes[copy.id] = copy;
       return copy;
     } else if (isDirectoryNode(node)) {
@@ -639,6 +837,8 @@ User: pratyush`
     if (isFileNode(node)) {
       result.mimeType = node.mimeType;
       result.isBinary = node.isBinary;
+      result.assetPath = node.assetPath;
+      result.storageKey = node.storageKey;
     } else if (isSymlinkNode(node)) {
       result.target = node.target;
     } else if (isDirectoryNode(node)) {
@@ -680,4 +880,4 @@ User: pratyush`
 }
 
 // Singleton instance
-export const vfs = new VirtualFS();
+export const vfs = VirtualFS.getInstance();

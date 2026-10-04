@@ -30,6 +30,7 @@ import {
 import { vfs } from '../../lib/vfs';
 import { isFileNode, isDirectoryNode } from '../../lib/vfs/nodes';
 import type { AnyVFSNode } from '../../types/vfs';
+import { Icon } from '../ui/Icon';
 import './FileManager.css';
 
 interface FileManagerProps {
@@ -346,19 +347,19 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
       <div className="fm-toolbar">
         <div className="fm-nav">
           <button className="fm-btn" onClick={goBack} disabled={historyIndex === 0} title="Back">
-            <ChevronLeft size={16} />
+            <Icon icon={ChevronLeft} size={16} />
           </button>
           <button className="fm-btn" onClick={goForward} disabled={historyIndex >= history.length - 1} title="Forward">
-            <ChevronRight size={16} />
+            <Icon icon={ChevronRight} size={16} />
           </button>
           <button className="fm-btn" onClick={goUp} title="Up">
-            <ChevronUp size={16} />
+            <Icon icon={ChevronUp} size={16} />
           </button>
           <button className="fm-btn" onClick={goHome} title="Home">
-            <Home size={16} />
+            <Icon icon={Home} size={16} />
           </button>
           <button className="fm-btn" onClick={refresh} disabled={loading} title="Refresh">
-            <RefreshCw size={16} className={loading ? 'spinning' : ''} />
+            <Icon icon={RefreshCw} size={16} className={loading ? 'spinning' : ''} />
           </button>
         </div>
 
@@ -375,7 +376,7 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
 
         <div className="fm-actions">
           <button className="fm-btn" onClick={handleFileInputClick} title="Upload">
-            <Upload size={16} />
+            <Icon icon={Upload} size={16} />
           </button>
           <input
             ref={fileInputRef}
@@ -385,10 +386,10 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
             style={{ display: 'none' }}
           />
           <button className="fm-btn" onClick={() => startCreate('folder')} title="New Folder">
-            <Plus size={16} />
+            <Icon icon={Plus} size={16} />
           </button>
           <button className="fm-btn" onClick={() => startCreate('file')} title="New File">
-            <File className="icon" size={16} />
+            <Icon icon={File} size={16} className="icon" />
           </button>
           <label className="fm-btn toggle" title={showHidden ? 'Hide hidden files' : 'Show hidden files'}>
             <input
@@ -396,14 +397,14 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
               checked={showHidden}
               onChange={e => setShowHidden(e.target.checked)}
             />
-            <Eye size={16} className={showHidden ? 'visible' : ''} />
-            <EyeOff size={16} className={showHidden ? '' : 'visible'} />
+            <Icon icon={Eye} size={16} className={showHidden ? 'visible' : ''} />
+            <Icon icon={EyeOff} size={16} className={showHidden ? '' : 'visible'} />
           </label>
           <button className="fm-btn" onClick={() => setViewMode('grid')} title="Grid view" className={viewMode === 'grid' ? 'active' : ''}>
-            <Grid size={16} />
+            <Icon icon={Grid} size={16} />
           </button>
           <button className="fm-btn" onClick={() => setViewMode('list')} title="List view" className={viewMode === 'list' ? 'active' : ''}>
-            <List size={16} />
+            <Icon icon={List} size={16} />
           </button>
         </div>
       </div>
@@ -423,10 +424,10 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
           <div className="fm-loading"><Loader2 className="spinning" size={24} /> Loading...</div>
         ) : entries.length === 0 ? (
           <div className="fm-empty">
-            <Folder size={48} className="empty-icon" />
+            <Icon icon={Folder} size={48} className="empty-icon" />
             <p>This folder is empty</p>
             <button className="fm-btn-small" onClick={() => startCreate('folder')}>
-              <Plus size={14} /> Create folder
+              <Icon icon={Plus} size={14} /> Create folder
             </button>
           </div>
         ) : (
@@ -481,13 +482,13 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
                       </div>
                       <div className="fm-entry-actions">
                         <button className="fm-icon-btn" onClick={e => { e.stopPropagation(); startRename(entry); }} title="Rename">
-                          <Edit2 size={14} />
+                          <Icon icon={Edit2} size={14} />
                         </button>
                         <button className="fm-icon-btn" onClick={e => { e.stopPropagation(); copyEntry(entry); }} title="Copy">
-                          <Copy size={14} />
+                          <Icon icon={Copy} size={14} />
                         </button>
                         <button className="fm-icon-btn danger" onClick={e => { e.stopPropagation(); deleteEntry(entry); }} title="Delete">
-                          <Trash2 size={14} />
+                          <Icon icon={Trash2} size={14} />
                         </button>
                       </div>
                     </>
@@ -502,7 +503,7 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
         {creatingItem && (
           <div className="fm-entry creating">
             <div className="fm-entry-icon">
-              {creatingItem === 'folder' ? <Folder className="icon folder" size={24} /> : <File className="icon file" size={24} />}
+              {creatingItem === 'folder' ? <Icon icon={Folder} size={24} className="icon folder" /> : <Icon icon={File} size={24} className="icon file" />}
             </div>
             <input
               ref={fileInputRef}
@@ -519,7 +520,7 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
             />
             <div className="fm-entry-actions">
               <button className="fm-icon-btn" onClick={() => { setCreatingItem(null); setNewItemName(''); }} title="Cancel">
-                <Trash2 size={14} />
+                <Icon icon={Trash2} size={14} />
               </button>
             </div>
           </div>
@@ -533,14 +534,14 @@ export function FileManager({ windowId, onOpenRequest }: FileManagerProps) {
           <div className="fm-upload-dialog-header">
             <h3>Upload Files</h3>
             <button className="fm-dialog-close" onClick={handleCancelUpload} title="Cancel">
-              <X size={18} />
+              <Icon icon={X} size={18} />
             </button>
           </div>
           <div className="fm-upload-dialog-files">
             {uploadFiles.map((file, index) => (
               <div key={index} className="fm-upload-file">
                 <div className="fm-upload-file-info">
-                  <File className="fm-upload-icon" size={20} />
+                  <Icon icon={File} className="fm-upload-icon" size={20} />
                   <div className="fm-upload-file-details">
                     <span className="fm-upload-file-name">{file.name}</span>
                     <span className="fm-upload-file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>

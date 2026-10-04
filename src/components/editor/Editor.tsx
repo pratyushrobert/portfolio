@@ -33,7 +33,12 @@ export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: Edit
     if (filePathToLoad) {
       loadFile(filePathToLoad);
     } else {
-      setError('No file specified');
+      // Create new empty document
+      setContent('');
+      setFilePath('');
+      setFileName('untitled.txt');
+      setIsDirty(false);
+      setSaved(true);
       setLoading(false);
     }
   }, [filePathToLoad]);
@@ -76,7 +81,21 @@ export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: Edit
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!filePath) return;
+    if (!filePath) {
+      // For new files, save to current working directory with fileName
+      const cwd = vfs.getCwd();
+      const newPath = cwd === '/' ? `/${fileName}` : `${cwd}/${fileName}`;
+      const result = vfs.writeFile(newPath, content);
+      if (result.success) {
+        setFilePath(newPath);
+        setIsDirty(false);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        setError(result.error || 'Failed to save file');
+      }
+      return;
+    }
 
     const result = vfs.writeFile(filePath, content);
     if (result.success) {
@@ -86,7 +105,7 @@ export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: Edit
     } else {
       setError(result.error || 'Failed to save file');
     }
-  }, [filePath, content]);
+  }, [filePath, content, fileName]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
@@ -190,7 +209,7 @@ export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: Edit
           onKeyDown={handleKeyDown}
           onSelect={handleSelect}
           spellCheck={false}
-          placeholder="No file loaded..."
+          placeholder={filePath ? "Loading..." : "New document - start typing..."}
           disabled={loading}
         />
       </div>

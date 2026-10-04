@@ -18,6 +18,7 @@ export * from './stat';
 export * from './neofetch';
 export * from './open';
 export * from './mimi';
+export * from './access';
 
 // Import and register all commands
 import { registerCommand } from '../commands';
@@ -41,6 +42,7 @@ import { statCommand } from './stat';
 import { neofetchCommand } from './neofetch';
 import { openCommand } from './open';
 import { mimiCommand } from './mimi';
+import { accessCommand } from './access';
 
 // Register all commands
 registerCommand(helpCommand);
@@ -63,3 +65,4 @@ registerCommand(statCommand);
 registerCommand(neofetchCommand);
 registerCommand(openCommand);
 registerCommand(mimiCommand);
+registerCommand(accessCommand);

@@ -17,7 +17,8 @@ export interface FileNode extends VFSNode {
   mimeType: string;
   size: number;
   isBinary: boolean;
-  storageKey?: string; // IndexedDB key for binary files
+  storageKey?: string; // IndexedDB key for binary files (visitor uploads)
+  assetPath?: string; // Static asset path for built-in files (e.g., '/portfolio/images/photo.jpg')
 }
 
 export interface DirectoryNode extends VFSNode {
@@ -55,5 +56,7 @@ export interface VFSStatResult {
   path: string;
   mimeType?: string;
   isBinary?: boolean;
+  assetPath?: string; // Static asset path for built-in files
+  storageKey?: string; // IndexedDB key for binary files
   target?: string; // for symlinks
 }

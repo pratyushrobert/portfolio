@@ -8,6 +8,11 @@ import { FileManager } from '../file-manager/FileManager';
 import { TextViewer } from '../text-viewer/TextViewer';
 import { Editor } from '../editor/Editor';
 import { ImageViewer } from '../image-viewer/ImageViewer';
+import { VideoPlayer } from '../video-player/VideoPlayer';
+import { PDFViewer } from '../pdf-viewer/PDFViewer';
+import { AdminLogin } from '../admin/AdminLogin';
+import { AdminPortal } from '../admin/AdminPortal';
+import { getAppIcon } from '../../lib/icons';
 import './Desktop.css';
 
 export function Desktop() {
@@ -23,7 +28,7 @@ export function Desktop() {
           id: windowId,
           appId: request.appId,
           title: request.path?.split('/').pop() || request.appId,
-          icon: () => null,
+          icon: getAppIcon(request.appId, request.mimeType),
           x: 100 + Math.random() * 200,
           y: 100 + Math.random() * 150,
           width: 800,
@@ -64,6 +69,14 @@ function WindowContent({ appId, windowId, appParams, onOpenRequest }: { appId: s
       return <Editor windowId={windowId} filePath={appParams?.path as string} onOpenRequest={onOpenRequest} />;
     case 'image-viewer':
       return <ImageViewer windowId={windowId} filePath={appParams?.path as string} onOpenRequest={onOpenRequest} />;
+    case 'video-player':
+      return <VideoPlayer windowId={windowId} filePath={appParams?.path as string} onOpenRequest={onOpenRequest} />;
+    case 'pdf-viewer':
+      return <PDFViewer windowId={windowId} filePath={appParams?.path as string} onOpenRequest={onOpenRequest} />;
+    case 'admin-login':
+      return <AdminLogin windowId={windowId} />;
+    case 'admin-portal':
+      return <AdminPortal windowId={windowId} />;
     case 'settings':
       return <SettingsPlaceholder windowId={windowId} />;
     default:

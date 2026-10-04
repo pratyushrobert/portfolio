@@ -9,27 +9,38 @@ const DEFAULT_ICONS: DesktopIcon[] = [
   { id: 'settings', label: 'Settings', icon: 'Settings', x: 40, y: 340, appId: 'settings' },
 ];
 
-export const useDesktopStore = create<DesktopState>()(
+type DesktopStore = DesktopState & {
+  setWallpaper: (wallpaper: string) => void;
+  setIcons: (icons: DesktopIcon[]) => void;
+  addIcon: (icon: DesktopIcon) => void;
+  removeIcon: (id: string) => void;
+  updateIconPosition: (id: string, x: number, y: number) => void;
+  setPanelPosition: (position: 'top' | 'bottom') => void;
+  togglePanel: () => void;
+};
+
+export const useDesktopStore = create<DesktopStore>()(
   persist(
-    () => ({
+    (set, get) => ({
       wallpaper: '',
       icons: DEFAULT_ICONS,
-      panelPosition: 'top',
+      panelPosition: 'top' as const,
       showPanel: true,
+
+      setWallpaper: (wallpaper: string) => set({ wallpaper }),
+      setIcons: (icons: DesktopIcon[]) => set({ icons }),
+      addIcon: (icon: DesktopIcon) => set({ icons: [...get().icons, icon] }),
+      removeIcon: (id: string) => set({ icons: get().icons.filter(i => i.id !== id) }),
+      updateIconPosition: (id: string, x: number, y: number) =>
+        set({
+          icons: get().icons.map(i => (i.id === id ? { ...i, x, y } : i)),
+        }),
+      setPanelPosition: (position: 'top' | 'bottom') => set({ panelPosition: position }),
+      togglePanel: () => set({ showPanel: !get().showPanel }),
     }),
     { name: 'pratyushos-desktop' }
   )
 );
 
-export const useDesktopActions = create((set, get) => ({
-  setWallpaper: (wallpaper: string) => set({ wallpaper }),
-  setIcons: (icons: DesktopIcon[]) => set({ icons }),
-  addIcon: (icon: DesktopIcon) => set({ icons: [...get().icons, icon] }),
-  removeIcon: (id: string) => set({ icons: get().icons.filter(i => i.id !== id) }),
-  updateIconPosition: (id: string, x: number, y: number) =>
-    set({
-      icons: get().icons.map(i => (i.id === id ? { ...i, x, y } : i)),
-    }),
-  setPanelPosition: (position: 'top' | 'bottom') => set({ panelPosition: position }),
-  togglePanel: () => set({ showPanel: !get().showPanel }),
-}));
+// Re-export for backwards compatibility
+export const useDesktopActions = useDesktopStore;

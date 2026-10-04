@@ -1,0 +1,17 @@
+.admin-actions-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-card-meta {
+  font-size: 11px;
+  color: var(--text-h);
+  margin-top: 4px;
+  font-family: var(--mono);
+}
+
+.status-error {
+  color: var(--error, #e03e3e);
+  font-weight: 500;
+}

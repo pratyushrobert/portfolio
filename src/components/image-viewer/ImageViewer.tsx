@@ -24,8 +24,8 @@ interface ImageViewerProps {
 
 export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }: ImageViewerProps) {
   const { getWindow } = useWindowStore();
-  const window = getWindow(windowId);
-  const windowFilePath = window?.appParams?.path as string | undefined;
+  const mimiWindow = getWindow(windowId);
+  const windowFilePath = mimiWindow?.appParams?.path as string | undefined;
 
   const filePathToLoad = propFilePath || windowFilePath;
 
@@ -34,11 +34,26 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
   const [error, setError] = useState<string | null>(null);
   const [filePath, setFilePath] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState<number | 'fit'>('fit');
   const [rotation, setRotation] = useState(0);
   const [naturalDimensions, setNaturalDimensions] = useState({ width: 0, height: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Update container size on resize
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerSize({ width: rect.width, height: rect.height });
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   // Load image
   useEffect(() => {
@@ -57,6 +72,7 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
     setFileName(path.split('/').pop() || path);
     setImageSrc(null);
     setImageLoaded(false);
+    setZoom('fit');
 
     try {
       const result = vfs.stat(path);
@@ -66,59 +82,54 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
         return;
       }
 
-      if (result.data!.type === 'directory') {
+      const statData = result.data!;
+      if (statData.type === 'directory') {
         setError('Cannot open directory as image');
         setLoading(false);
         return;
       }
 
-      const readResult = vfs.readFile(path);
-      if (!readResult.success) {
-        setError(readResult.error || 'Failed to read file');
-        setLoading(false);
-        return;
-      }
-
-      const node = vfs.getNodeByPath(path);
-      if (!node || !isFileNode(node)) {
-        setError('File not found in VFS');
-        setLoading(false);
-        return;
-      }
-
-      const mimeType = node.mimeType || getMimeTypeFromExtension(path);
-      const imageData = readResult.data!;
-
-      // Create blob URL from base64 or binary data
+      // Use stat data instead of private getNodeByPath
+      const mimeType = statData.mimeType || getMimeTypeFromExtension(path);
+      const isBinary = statData.isBinary;
+      const assetPath = statData.assetPath;
+      const storageKey = statData.storageKey;
       let blobUrl: string;
-      try {
-        // Check if data is base64 encoded (for binary files)
-        if (node.isBinary) {
-          // Convert base64 to blob
-          const byteCharacters = atob(imageData);
-          const byteArrays = [];
-          for (let i = 0; i < byteCharacters.length; i += 512) {
-            const slice = byteCharacters.slice(i, i + 512);
-            const byteNumbers = new Array(slice.length);
-            for (let j = 0; j < slice.length; j++) {
-              byteNumbers[j] = slice.charCodeAt(j);
-            }
-            byteArrays.push(new Uint8Array(byteNumbers));
+
+      if (isBinary) {
+        // Built-in static asset - use assetPath directly
+        if (assetPath) {
+          blobUrl = assetPath;
+        } else if (storageKey) {
+          // Visitor upload - use readBinaryFile from IndexedDB
+          const binaryResult = await vfs.readBinaryFile(path);
+          if (!binaryResult.success || !binaryResult.data) {
+            setError(binaryResult.error || 'Failed to read binary file');
+            setLoading(false);
+            return;
           }
-          const blob = new Blob(byteArrays, { type: mimeType });
-          blobUrl = URL.createObjectURL(blob);
+          blobUrl = URL.createObjectURL(binaryResult.data);
         } else {
-          // Text data - might be base64 or data URL
-          if (imageData.startsWith('data:')) {
-            blobUrl = imageData;
-          } else {
-            // Assume base64
-            blobUrl = `data:${mimeType};base64,${imageData}`;
-          }
+          setError('Binary file missing assetPath and storageKey');
+          setLoading(false);
+          return;
         }
-      } catch {
-        // Fallback: try as data URL
-        blobUrl = `data:${mimeType};base64,${imageData}`;
+      } else {
+        // Text file - use readFile
+        const readResult = vfs.readFile(path);
+        if (!readResult.success) {
+          setError(readResult.error || 'Failed to read file');
+          setLoading(false);
+          return;
+        }
+        const imageData = readResult.data!;
+        // Text data - might be base64 or data URL
+        if (imageData.startsWith('data:')) {
+          blobUrl = imageData;
+        } else {
+          // Assume base64
+          blobUrl = `data:${mimeType};base64,${imageData}`;
+        }
       }
 
       setImageSrc(blobUrl);
@@ -133,6 +144,8 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
     const img = e.currentTarget;
     setNaturalDimensions({ width: img.naturalWidth, height: img.naturalHeight });
     setImageLoaded(true);
+    // Set initial zoom to fit
+    setZoom('fit');
   }, []);
 
   const handleImageError = useCallback(() => {
@@ -140,23 +153,26 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
     setLoading(false);
   }, []);
 
-  const handleZoomIn = useCallback(() => setZoom(z => Math.min(z * 1.2, 5)), []);
-  const handleZoomOut = useCallback(() => setZoom(z => Math.max(z / 1.2, 0.1)), []);
-  const handleResetZoom = useCallback(() => setZoom(1), []);
-  const handleFitToWindow = useCallback(() => {
-    if (!imgRef.current || naturalDimensions.width === 0) return;
-    const container = imgRef.current.parentElement;
-    if (!container) return;
-    const containerRect = container.getBoundingClientRect();
-    const scaleX = (containerRect.width - 40) / naturalDimensions.width;
-    const scaleY = (containerRect.height - 40) / naturalDimensions.height;
-    setZoom(Math.min(scaleX, scaleY, 3));
-  }, [naturalDimensions]);
+  const handleZoomIn = useCallback(() => setZoom(z => {
+    if (z === 'fit') return 1;
+    return Math.min(z * 1.2, 5);
+  }), []);
 
-  const handleRotateLeft = useCallback(() => setRotation(r => (r - 90) % 360), []);
+  const handleZoomOut = useCallback(() => setZoom(z => {
+    if (z === 'fit') return 1;
+    return Math.max(z / 1.2, 0.1);
+  }), []);
+
+  const handleResetZoom = useCallback(() => setZoom(1), []);
+
+  const handleFitToWindow = useCallback(() => {
+    setZoom('fit');
+  }, []);
+
+  const handleRotateLeft = useCallback(() => setRotation(r => (r - 90 + 360) % 360), []);
   const handleRotateRight = useCallback(() => setRotation(r => (r + 90) % 360), []);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     switch (e.key) {
       case '=':
       case '+':
@@ -193,6 +209,32 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
     };
   }, [imageSrc]);
 
+  const computeFitZoom = useCallback((): number => {
+    if (!containerRef.current || naturalDimensions.width === 0) return 1;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const scaleX = (containerRect.width - 40) / naturalDimensions.width;
+    const scaleY = (containerRect.height - 40) / naturalDimensions.height;
+    return Math.min(scaleX, scaleY, 1);
+  }, [naturalDimensions.width, naturalDimensions.height]);
+
+  // Auto-fit when image loads or container resizes
+  useEffect(() => {
+    if (zoom === 'fit' && naturalDimensions.width > 0) {
+      setZoom(computeFitZoom());
+    }
+  }, [containerSize, naturalDimensions, zoom, computeFitZoom]);
+
+  // Helper to compute displayed dimensions
+  const getDisplayedDimensions = () => {
+    const effectiveZoom = zoom === 'fit' ? computeFitZoom() : (typeof zoom === 'number' ? zoom : 1);
+    return {
+      width: naturalDimensions.width * effectiveZoom,
+      height: naturalDimensions.height * effectiveZoom,
+    };
+  };
+
+  const displayedDimensions = getDisplayedDimensions();
+
   if (loading) {
     return (
       <div className="image-viewer loading">
@@ -212,11 +254,12 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
     );
   }
 
-  const displayedWidth = naturalDimensions.width * zoom;
-  const displayedHeight = naturalDimensions.height * zoom;
+  const effectiveZoom = zoom === 'fit' ? computeFitZoom() : (typeof zoom === 'number' ? zoom : 1);
+  const displayedWidth = naturalDimensions.width * effectiveZoom;
+  const displayedHeight = naturalDimensions.height * effectiveZoom;
 
   return (
-    <div className="image-viewer" onKeyDown={handleKeyDown} tabIndex={0}>
+    <div className="image-viewer" onKeyDown={handleKeyDown} tabIndex={0} ref={containerRef}>
       <div className="image-viewer-header">
         <div className="image-viewer-file-info">
           <Image size={18} className="image-viewer-icon" />
@@ -229,7 +272,7 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
           {imageLoaded && (
             <>
               <span>{naturalDimensions.width} × {naturalDimensions.height}</span>
-              <span className="zoom-level">{Math.round(zoom * 100)}%</span>
+              <span className="zoom-level">{Math.round(effectiveZoom * 100)}%</span>
             </>
           )}
         </div>
@@ -237,9 +280,9 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
 
       <div className="image-viewer-toolbar">
         <div className="toolbar-group">
-          <button className="iv-btn" onClick={handleZoomIn} title="Zoom In (+)" disabled={!imageLoaded}><ZoomIn size={16} /></button>
-          <button className="iv-btn" onClick={handleZoomOut} title="Zoom Out (-)" disabled={!imageLoaded}><ZoomOut size={16} /></button>
+          <button className="iv-btn" onClick={handleZoomOut} title="Zoom Out" disabled={!imageLoaded}><ZoomOut size={16} /></button>
           <button className="iv-btn" onClick={handleResetZoom} title="Reset Zoom (0)" disabled={!imageLoaded}><Minimize2 size={16} /></button>
+          <button className="iv-btn" onClick={handleZoomIn} title="Zoom In (+)" disabled={!imageLoaded}><ZoomIn size={16} /></button>
           <button className="iv-btn" onClick={handleFitToWindow} title="Fit to Window" disabled={!imageLoaded}><Maximize2 size={16} /></button>
         </div>
         <div className="toolbar-group">
@@ -251,9 +294,14 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
         </div>
       </div>
 
-      <div className="image-viewer-content">
+      <div className="image-viewer-content" ref={containerRef}>
         {imageSrc && (
-          <div className="image-container" style={{ transform: `rotate(${rotation}deg)` }}>
+          <div className="image-container" style={{
+            transform: `rotate(${rotation}deg) scale(${effectiveZoom})`,
+            transformOrigin: 'center center',
+            width: displayedWidth,
+            height: displayedHeight,
+          }}>
             <img
               ref={imgRef}
               src={imageSrc}
@@ -261,8 +309,6 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
               onLoad={handleImageLoad}
               onError={handleImageError}
               style={{
-                width: `${displayedWidth}px`,
-                height: `${displayedHeight}px`,
                 maxWidth: 'none',
                 maxHeight: 'none',
               }}

@@ -1,0 +1,226 @@
+.video-player {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--window-content-bg, var(--bg));
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.video-player.loading,
+.video-player.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--text-h);
+}
+
+.video-player.error {
+  color: var(--error, #e03e3e);
+}
+
+.video-player.error .error-message {
+  font-weight: 500;
+}
+
+.video-player.error .error-path {
+  font-size: 12px;
+  color: var(--text-h);
+  font-family: var(--mono);
+  word-break: break-all;
+  max-width: 400px;
+  text-align: center;
+}
+
+.video-player-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--accent-bg);
+}
+
+.video-player-file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.video-player-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.video-player-file-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.video-player-file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-player-file-path {
+  font-size: 11px;
+  color: var(--text-h);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-player-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.video-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-container video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.video-player-controls {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--panel-bg, rgba(255, 255, 255, 0.8));
+  backdrop-filter: blur(8px);
+}
+
+.video-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.seek-bar {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.seek-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.seek-bar::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+  min-width: 120px;
+  justify-content: flex-end;
+}
+
+.video-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vp-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.vp-btn:hover {
+  background: var(--panel-btn-hover, var(--accent-bg));
+  color: var(--accent);
+}
+
+.vp-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.volume-slider {
+  flex: 1;
+  max-width: 120px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .video-player-controls {
+    background: var(--panel-bg, rgba(22, 23, 29, 0.9));
+  }
+}

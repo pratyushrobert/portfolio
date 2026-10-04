@@ -80,6 +80,7 @@ export function WindowContainer({ window, children }: WindowContainerProps) {
       <div
         ref={titleBarRef}
         className="window-titlebar"
+        onMouseDown={handleMouseDown}
         onDoubleClick={() => !isMaximized && maximizeWindow(id)}
       >
         <div className="window-titlebar-left">

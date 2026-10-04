@@ -37,6 +37,25 @@
   transition: all 0.1s ease;
 }
 
+.fm-btn > svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted, #6c7086);
+}
+
+.fm-btn:hover:not(:disabled) > svg {
+  color: var(--text-primary, #cdd6f4);
+}
+
+.fm-btn.active > svg {
+  color: var(--accent, #89b4fa);
+}
+
+.fm-btn:disabled > svg {
+  opacity: 0.4;
+}
+
 .fm-btn:hover:not(:disabled) {
   background: var(--button-hover, #313244);
   color: var(--text-primary, #cdd6f4);
