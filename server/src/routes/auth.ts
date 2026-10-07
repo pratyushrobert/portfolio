@@ -1,109 +1,72 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { verifyCredentials, createAuthCookie, clearAuthCookie, getSessionFromCookie, getUserFromSession } from '../services/auth.js';
-import { optionalAuth } from '../middleware/auth.js';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { loginSchema } from '../schemas/index.js';
+import { validateBody } from '../middleware/validation.js';
+import { getAuthenticatedUser } from '../middleware/auth.js';
+import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from '../services/auth.js';
+import type { RouteContext } from './context.js';
 
-const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-export async function authRoutes(fastify: FastifyInstance) {
+export async function authRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
   fastify.post('/login', {
-    schema: {
-      body: {
-        type: 'object',
-        required: ['email', 'password'],
-        properties: {
-          email: { type: 'string', format: 'email' },
-          password: { type: 'string', minLength: 1 }
-        }
-      }
-    },
-    preHandler: [optionalAuth],
+    config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+    preValidation: [validateBody(loginSchema)],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       const { email, password } = request.body as { email: string; password: string };
+      const user = context.authService.verifyCredentials(email, password);
 
-      const user = await verifyCredentials(email, password);
       if (!user) {
         return reply.status(401).send({
           success: false,
           error: 'Invalid credentials',
-          code: 'INVALID_CREDENTIALS'
+          code: 'INVALID_CREDENTIALS',
         });
       }
 
-      const sessionId = createSession(user.id);
-      reply.setCookie('mimios_session', sessionId, {
+      context.authService.deleteExpiredSessions();
+      const session = context.authService.createSession(user.id);
+      reply.setCookie(SESSION_COOKIE_NAME, session.id, {
         httpOnly: true,
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        signed: true,
+        secure: context.config.NODE_ENV === 'production',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: SESSION_TTL_MS / 1000,
       });
 
-      return reply.send({
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role
-          }
-        },
-        message: 'Login successful'
-      });
-    }
+      return reply.send({ success: true, data: { user }, message: 'Login successful' });
+    },
   });
 
   fastify.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
-    const sessionId = request.cookies?.mimios_session;
-    if (sessionId) {
-      deleteSession(sessionId);
+    const rawCookie = request.cookies?.[SESSION_COOKIE_NAME];
+    if (rawCookie) {
+      const unsigned = request.unsignCookie(rawCookie);
+      if (unsigned.valid) {
+        context.authService.deleteSession(unsigned.value);
+      }
     }
 
-    reply.clearCookie('mimios_session', { path: '/' });
-    return reply.send({
-      success: true,
-      message: 'Logged out successfully'
-    });
+    reply.clearCookie(SESSION_COOKIE_NAME, { path: '/', signed: true });
+    return reply.send({ success: true, message: 'Logged out successfully' });
   });
 
   fastify.get('/me', {
     preHandler: [async (request, reply) => {
-      const sessionId = request.cookies?.mimios_session ||
-        request.headers.cookie?.split(';').map(c => c.trim()).find(c => c.startsWith('mimios_session='))?.split('=')[1];
-
-      if (!sessionId) {
-        return fastify.httpErrors.unauthorized('Authentication required');
-      }
-
-      const user = await getUserFromSession(sessionId);
+      const rawCookie = request.cookies?.[SESSION_COOKIE_NAME];
+      const unsigned = rawCookie ? request.unsignCookie(rawCookie) : { valid: false as const, value: '' };
+      const user = unsigned.valid ? context.authService.getUserFromSession(unsigned.value) : null;
       if (!user) {
-        return fastify.httpErrors.unauthorized('Invalid or expired session');
+        await reply.status(401).send({
+          success: false,
+          error: 'Authentication required',
+          code: 'UNAUTHENTICATED',
+        });
+        return;
       }
-
-      (request as any).user = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      };
+      (request as unknown as { user: typeof user }).user = user;
     }],
-    handler: async (request, reply) => {
-      const user = (request as any).user;
-      return reply.send({
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role
-          }
-        }
-      });
-    }
+    handler: async (request) => ({
+      success: true,
+      data: { user: getAuthenticatedUser(request) },
+    }),
   });
 }

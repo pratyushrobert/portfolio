@@ -1,58 +1,41 @@
-import { FastifyInstance } from 'fastify';
-import { db } from '../db/index.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
-import { randomUUID } from 'crypto';
+import type { FastifyInstance } from 'fastify';
+import { authenticate } from '../middleware/auth.js';
+import type { RouteContext } from './context.js';
 
-export async function adminRoutes(fastify: FastifyInstance) {
-  fastify.get('/dashboard', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const stats = {
-      users: db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number },
-      projects: db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number },
-      skills: db.prepare('SELECT COUNT(*) as count FROM skills').get() as { count: number },
-      experience: db.prepare('SELECT COUNT(*) as count FROM experience').get() as { count: number },
-      certificates: db.prepare('SELECT COUNT(*) as count FROM certificates').get() as { count: number },
-      assets: db.prepare('SELECT COUNT(*) as count FROM assets').get() as { count: number },
-      visitors: db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('visitor') as { count: number },
-      sessions: db.prepare('SELECT COUNT(*) as count FROM sessions WHERE expires_at > ?').get(Date.now()) as { count: number },
-      wallpaper: db.prepare('SELECT value FROM site_config WHERE key = ?').get('wallpaper_url') as { value: string } | undefined,
+export async function adminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
+  const allowedTables = new Set(['projects', 'skills', 'experience', 'certificates', 'assets']);
+  fastify.get('/dashboard', { preHandler: [authenticate(context.authService)] }, async () => {
+    const count = (table: string): number => {
+      if (!allowedTables.has(table)) {
+        throw new Error(`Invalid table: ${table}`);
+      }
+      const row = context.database.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number };
+      return row.count;
     };
 
-    return { success: true, data: stats };
-  }
-
-  fastify.get('/stats', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const stats = {
-      users: db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number },
-      projects: db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number },
-      skills: db.prepare('SELECT COUNT(*) as count FROM skills').get() as { count: number },
-      experience: db.prepare('SELECT COUNT(*) as count FROM experience').get() as { count: number },
-      certificates: db.prepare('SELECT COUNT(*) as count FROM certificates').get() as { count: number },
-      assets: db.prepare('SELECT COUNT(*) as count FROM assets').get() as { count: number },
+    const countQuery = (sql: string): number => {
+      const row = context.database.prepare(sql).get() as { count: number };
+      return row ? row.count : 0;
     };
-    return { success: true, data: stats };
-  });
 
-  fastify.get('/config', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const config = db.prepare('SELECT * FROM site_config').all();
-    return { success: true, data: config };
-  });
-
-  fastify.patch('/config/:key', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const { value } = request.body as { value: string };
-    const { key } = request.params as { key: string };
-
-    db.prepare('UPDATE site_config SET value = ?, updated_at = ? WHERE key = ?').run(request.body.value, Date.now(), request.params.key);
-
-    const config = db.prepare('SELECT * FROM site_config WHERE key = ?').get(request.params.key);
-    return { success: true, data: config };
-  });
-
-  fastify.post('/config', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const { key, value, description } = request.body as { key: string; value: string; description?: string };
-
-    db.prepare('INSERT OR REPLACE INTO site_config (key, value, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
-      .run(request.body.key, request.body.value, request.body.description || '', Date.now(), Date.now());
-
-    return { success: true, message: 'Configuration saved' };
+    return {
+      success: true,
+      data: {
+        projects: count('projects'),
+        projects_public: countQuery("SELECT COUNT(*) AS count FROM projects WHERE visibility = 'public'"),
+        projects_featured: countQuery("SELECT COUNT(*) AS count FROM projects WHERE featured = 1"),
+        skills: count('skills'),
+        skills_public: countQuery("SELECT COUNT(*) AS count FROM skills WHERE visibility = 1"),
+        experience: count('experience'),
+        experience_public: countQuery("SELECT COUNT(*) AS count FROM experience WHERE visibility = 1"),
+        certificates: count('certificates'),
+        certificates_public: countQuery("SELECT COUNT(*) AS count FROM certificates WHERE visibility = 1"),
+        assets: count('assets'),
+        active_sessions: countQuery(`SELECT COUNT(*) AS count FROM sessions WHERE expires_at > ${Date.now()}`),
+        github_linked_projects: countQuery("SELECT COUNT(*) AS count FROM projects WHERE github_repo IS NOT NULL AND trim(github_repo) != ''"),
+        github_synced_projects: countQuery("SELECT COUNT(*) AS count FROM projects WHERE github_sync_status = 'synced'"),
+        github_username: context.config.GITHUB_USERNAME,
+      },
+    };
   });
 }

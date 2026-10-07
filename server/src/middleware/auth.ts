@@ -1,66 +1,40 @@
-import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
-import { getSessionFromCookie, getUserFromSession } from '../services/auth.js';
-import type { AuthUser, AuthenticatedRequest } from '../types/index.js';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AuthService } from '../services/auth.js';
+import { SESSION_COOKIE_NAME } from '../services/auth.js';
+import type { AuthenticatedRequest } from '../types/index.js';
 
-export async function authenticate(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<AuthenticatedRequest> {
-  const sessionId = request.cookies?.mimios_session ||
-    request.headers.cookie?.split(';').map(c => c.trim()).find(c => c.startsWith('mimios_session='))?.split('=')[1];
-
-  if (!sessionId) {
-    return reply.status(401).send({
-      success: false,
-      error: 'Authentication required',
-      code: 'UNAUTHENTICATED'
-    });
+function sessionIdFromRequest(request: FastifyRequest): string | null {
+  const rawCookie = request.cookies?.[SESSION_COOKIE_NAME];
+  if (!rawCookie) {
+    return null;
   }
 
-  const user = await getUserFromSession(sessionId);
-  if (!user) {
-    reply.clearCookie('mimios_session', { path: '/' });
-    return reply.status(401).send({
-      success: false,
-      error: 'Invalid or expired session',
-      code: 'INVALID_SESSION'
-    });
-  }
-
-  (request as AuthenticatedRequest).user = {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    role: session.user.role
-  };
-
-  return request as AuthenticatedRequest;
+  const unsigned = request.unsignCookie(rawCookie);
+  return unsigned.valid ? unsigned.value : null;
 }
 
-export async function optionalAuth(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  const sessionId = request.cookies?.mimios_session ||
-    request.headers.cookie?.split(';').map(c => c.trim()).find(c => c.startsWith('mimios_session='))?.split('=')[1];
-
-  if (sessionId) {
-    const user = await getUserFromSession(sessionId);
-    if (user) {
-      (request as any).user = user;
-    }
-  }
-}
-
-export function requireRole(...roles: string[]) {
+export function authenticate(authService: AuthService) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    const user = (request as any).user;
-    if (!user || !roles.includes(user.role)) {
-      return reply.status(403).send({
+    const rawCookie = request.cookies?.[SESSION_COOKIE_NAME];
+    const sessionId = sessionIdFromRequest(request);
+    const user = sessionId ? authService.getUserFromSession(sessionId) : null;
+
+    if (!user) {
+      if (rawCookie) {
+        reply.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
+      }
+      await reply.status(401).send({
         success: false,
-        error: 'Insufficient permissions',
-        code: 'FORBIDDEN'
+        error: 'Authentication required',
+        code: 'UNAUTHENTICATED',
       });
+      return;
     }
+
+    (request as AuthenticatedRequest).user = user;
   };
+}
+
+export function getAuthenticatedUser(request: FastifyRequest): AuthenticatedRequest['user'] {
+  return (request as AuthenticatedRequest).user;
 }

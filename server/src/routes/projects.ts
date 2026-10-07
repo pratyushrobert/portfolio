@@ -1,148 +1,324 @@
-import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
-import { db } from '../db/index.js';
-import { randomUUID } from 'crypto';
-import { authenticate, requireRole } from '../middleware/auth.js';
-import { validateBody, validateParams } from '../middleware/validation.js';
-import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
+import type { FastifyInstance } from 'fastify';
+import { authenticate } from '../middleware/auth.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validation.js';
+import {
+  idParamSchema,
+  projectCreateSchema,
+  projectUpdateSchema,
+  projectSyncSchema,
+  repoContentsQuerySchema,
+  repoFileQuerySchema,
+} from '../schemas/index.js';
+import {
+  fetchGitHubRepoMetadata,
+  parseGitHubRepo,
+  fetchRepoTree,
+  fetchRepoFile,
+  GitHubSyncError,
+} from '../services/github.js';
+import type { RouteContext } from './context.js';
+import { publicProject } from './context.js';
 
-const projectSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(200),
-  description: z.string().max(500),
-  long_description: z.string().optional(),
-  technologies: z.array(z.string()).default([]),
-  github_url: z.string().url().optional().or(z.literal('')),
-  live_url: z.string().url().optional().or(z.literal('')),
-  featured_image: z.string().optional(),
-  visibility: z.enum(['public', 'hidden']).default('public'),
-  featured: z.boolean().default(false),
-  sort_order: z.number().int().min(0).default(0),
-});
+type ProjectInput = {
+  name: string;
+  description: string;
+  long_description?: string | null;
+  technologies: string[];
+  github_url?: string | null;
+  live_url?: string | null;
+  featured_image?: string | null;
+  visibility: 'public' | 'hidden';
+  featured: boolean;
+  sort_order: number;
+  github_repo?: string | null;
+};
 
-const projectUpdateSchema = projectSchema.partial();
+function serializeProject(row: Record<string, unknown>): Record<string, unknown> {
+  return publicProject(row);
+}
 
-const projectParamsSchema = z.object({
-  id: z.string().uuid('Invalid project ID format')
-});
+function projectUpdateValues(body: Record<string, unknown>): { assignments: string[]; values: unknown[] } {
+  const columns: Record<string, (value: unknown) => unknown> = {
+    name: (value) => value,
+    description: (value) => value,
+    long_description: (value) => value,
+    technologies: (value) => JSON.stringify(value),
+    github_url: (value) => value,
+    live_url: (value) => value,
+    featured_image: (value) => value,
+    visibility: (value) => value,
+    featured: (value) => value ? 1 : 0,
+    sort_order: (value) => value,
+    github_repo: (value) => value,
+  };
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+  for (const [key, value] of Object.entries(body)) {
+    const serializer = columns[key];
+    if (serializer) {
+      assignments.push(`${key} = ?`);
+      values.push(serializer(value));
+    }
+  }
+  return { assignments, values };
+}
 
-export async function projectRoutes(fastify: FastifyInstance) {
-  // GET /api/projects - List all public projects
-  fastify.get('/', async (request, reply) => {
-    const projects = fastify.db.prepare(`
-      SELECT * FROM projects WHERE visibility = 'public' ORDER BY sort_order ASC, created_at DESC
-    `).all();
-
-    return {
-      success: true,
-      data: projects
-    };
+export async function projectRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
+  fastify.get('/', async () => {
+    const rows = context.database.prepare(`
+      SELECT * FROM projects WHERE visibility = 'public'
+      ORDER BY sort_order ASC, created_at DESC
+    `).all() as Array<Record<string, unknown>>;
+    return { success: true, data: rows.map(serializeProject) };
   });
 
-  // GET /api/projects/:id - Get single project
   fastify.get('/:id', {
-    schema: { params: projectParamsSchema.shape },
-    handler: async (request, reply) => {
-      const project = fastify.db.prepare('SELECT * FROM projects WHERE id = ?').get(request.params.id);
-      if (!project) {
-        return fastify.httpErrors.notFound('Project not found');
-      }
-      return { success: true, data: project };
-    }
-  });
-
-  // POST /api/admin/projects - Create project (admin only)
-  fastify.post('/admin', {
-    preHandler: [authenticate, requireRole('admin')],
-    schema: { body: projectSchema.shape },
-    preValidation: [validateBody(projectSchema)],
-    handler: async (request, reply) => {
-      const data = request.body as any;
-      const id = crypto.randomUUID();
-      const now = Date.now();
-
-      fastify.db.prepare(`
-        INSERT INTO projects (id, name, description, long_description, technologies, github_url, live_url, featured_image, visibility, featured, sort_order, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        crypto.randomUUID(),
-        request.body.name,
-        request.body.description,
-        request.body.long_description || null,
-        JSON.stringify(request.body.technologies || []),
-        request.body.github_url || null,
-        request.body.live_url || null,
-        request.body.featured_image || null,
-        request.body.visibility || 'public',
-        request.body.featured ? 1 : 0,
-        request.body.sort_order || 0,
-        Date.now(),
-        Date.now()
-      );
-
-      const project = fastify.db.prepare('SELECT * FROM projects WHERE id = ?').get(crypto.randomUUID());
-      return reply.status(201).send({ success: true, data: project });
-    }
-  );
-
-  // PATCH /api/admin/projects/:id - Update project (admin only)
-  fastify.patch('/admin/:id', {
-    preHandler: [authenticate, requireRole('admin')],
-    schema: { params: projectParamsSchema.shape, body: projectUpdateSchema.shape },
-    preValidation: [validateParams(projectParamsSchema), validateBody(projectUpdateSchema)],
+    preValidation: [validateParams(idParamSchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const updates = request.body as Partial<typeof projectSchema._type>;
+      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      if (!row) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+      return { success: true, data: serializeProject(row) };
+    },
+  });
 
-      const existing = fastify.db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-      if (!existing) {
-        return fastify.httpErrors.notFound('Project not found');
+  fastify.get('/:id/repository', {
+    preValidation: [validateParams(idParamSchema)],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      if (!row) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+      if (!row.github_repo || typeof row.github_repo !== 'string' || !row.github_repo.trim()) {
+        return reply.status(400).send({ success: false, error: 'Project does not have an associated GitHub repository', code: 'NO_REPOSITORY' });
+      }
+      return {
+        success: true,
+        data: {
+          projectId: row.id,
+          projectName: row.name,
+          repo: row.github_repo,
+          html_url: row.github_url || `https://github.com/${row.github_repo}`,
+        },
+      };
+    },
+  });
+
+  fastify.get('/:id/repository/contents', {
+    preValidation: [validateParams(idParamSchema), validateQuery(repoContentsQuerySchema)],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      if (!row) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+      if (!row.github_repo || typeof row.github_repo !== 'string' || !row.github_repo.trim()) {
+        return reply.status(400).send({ success: false, error: 'Project does not have an associated GitHub repository', code: 'NO_REPOSITORY' });
       }
 
-      const updates: string[] = [];
-      const values: any[] = [];
-
-      for (const [key, value] of Object.entries(request.body)) {
-        if (value !== undefined) {
-          updates.push(`${key} = ?`);
-          values.push(typeof value === 'object' ? JSON.stringify(value) : value);
+      const query = request.query as { path?: string; ref?: string };
+      try {
+        const items = await fetchRepoTree(row.github_repo, query.path || '', query.ref, context.config.GITHUB_TOKEN);
+        return { success: true, data: items };
+      } catch (err: unknown) {
+        if (err instanceof GitHubSyncError) {
+          return reply.status(err.statusCode).send({
+            success: false,
+            error: err.message,
+            code: err.code,
+          });
         }
+        request.log.error({ err }, 'Failed to fetch repository tree');
+        return reply.status(502).send({
+          success: false,
+          error: 'Failed to communicate with GitHub repository service',
+          code: 'NETWORK_ERROR',
+        });
       }
-
-      if (updates.length === 0) {
-        return reply.status(400).send({ success: false, error: 'No valid fields to update', code: 'NO_UPDATES' });
-      }
-
-      values.push(Date.now(), id);
-      fastify.db.prepare(`UPDATE projects SET ${updates.join(', ')}, updated_at = ? WHERE id = ?`).run(...values);
-
-      const project = fastify.db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-      return { success: true, data: project };
-    }
+    },
   });
 
-  // DELETE /api/admin/projects/:id - Delete project (admin only)
-  fastify.delete('/admin/:id', {
-    preHandler: [authenticate, requireRole('admin')],
-    schema: { params: projectParamsSchema.shape },
-    preValidation: [validateParams(projectParamsSchema)],
+  fastify.get('/:id/repository/file', {
+    preValidation: [validateParams(idParamSchema), validateQuery(repoFileQuerySchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-
-      const result = fastify.db.prepare('DELETE FROM projects WHERE id = ?').run(id);
-      if (result.changes === 0) {
-        return fastify.httpErrors.notFound('Project not found');
+      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      if (!row) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+      if (!row.github_repo || typeof row.github_repo !== 'string' || !row.github_repo.trim()) {
+        return reply.status(400).send({ success: false, error: 'Project does not have an associated GitHub repository', code: 'NO_REPOSITORY' });
       }
 
-      return { success: true, message: 'Project deleted' };
-    }
+      const query = request.query as { path: string; ref?: string };
+      try {
+        const file = await fetchRepoFile(row.github_repo, query.path, query.ref, context.config.GITHUB_TOKEN);
+        return { success: true, data: file };
+      } catch (err: unknown) {
+        if (err instanceof GitHubSyncError) {
+          return reply.status(err.statusCode).send({
+            success: false,
+            error: err.message,
+            code: err.code,
+          });
+        }
+        request.log.error({ err }, 'Failed to fetch repository file');
+        return reply.status(502).send({
+          success: false,
+          error: 'Failed to communicate with GitHub repository service',
+          code: 'NETWORK_ERROR',
+        });
+      }
+    },
+  });
+}
+
+export async function projectAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
+  const admin = authenticate(context.authService);
+
+  fastify.get('/', { preHandler: [admin] }, async () => {
+    const rows = context.database.prepare('SELECT * FROM projects ORDER BY sort_order ASC, created_at DESC').all() as Array<Record<string, unknown>>;
+    return { success: true, data: rows.map(serializeProject) };
   });
 
-  // GET /api/admin/projects - List all projects (admin, includes hidden)
-  fastify.get('/admin', {
-    preHandler: [authenticate, requireRole('admin')],
+  fastify.get('/:id', {
+    preHandler: [admin],
+    preValidation: [validateParams(idParamSchema)],
     handler: async (request, reply) => {
-      const projects = fastify.db.prepare('SELECT * FROM projects ORDER BY sort_order ASC, created_at DESC').all();
-      return { success: true, data: projects };
-    }
+      const { id } = request.params as { id: string };
+      const row = context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+      if (!row) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+      return { success: true, data: serializeProject(row) };
+    },
+  });
+
+  fastify.post('/', {
+    preHandler: [admin],
+    preValidation: [validateBody(projectCreateSchema)],
+    handler: async (request, reply) => {
+      const data = request.body as ProjectInput;
+      const id = randomUUID();
+      const now = Date.now();
+      context.database.prepare(`
+        INSERT INTO projects (id, name, description, long_description, technologies, github_url, live_url, featured_image, visibility, featured, sort_order, github_repo, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, data.name, data.description, data.long_description ?? null, JSON.stringify(data.technologies), data.github_url ?? null,
+        data.live_url ?? null, data.featured_image ?? null, data.visibility, data.featured ? 1 : 0, data.sort_order, data.github_repo ?? null, now, now);
+      return reply.status(201).send({ success: true, data: serializeProject(context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>) });
+    },
+  });
+
+  fastify.post('/:id/github-sync', {
+    preHandler: [admin],
+    preValidation: [validateParams(idParamSchema), validateBody(projectSyncSchema)],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const row = context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+      if (!row) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+
+      const body = (request.body || {}) as { github_repo?: string };
+      const candidate = body.github_repo || (typeof row.github_repo === 'string' ? row.github_repo : '') || (typeof row.github_url === 'string' ? row.github_url : '');
+      const repo = parseGitHubRepo(candidate);
+
+      if (!repo) {
+        return reply.status(400).send({
+          success: false,
+          error: 'No valid GitHub repository specified for this project. Please provide an "owner/repo" or GitHub URL.',
+          code: 'INVALID_REPO',
+        });
+      }
+
+      try {
+        const meta = await fetchGitHubRepoMetadata(repo, context.config.GITHUB_TOKEN);
+        const now = Date.now();
+        const githubUrl = row.github_url || meta.html_url;
+
+        context.database.prepare(`
+          UPDATE projects SET
+            github_repo = ?,
+            github_stars = ?,
+            github_forks = ?,
+            github_language = ?,
+            github_topics = ?,
+            github_updated_at = ?,
+            github_sync_status = 'synced',
+            github_synced_at = ?,
+            github_url = ?,
+            updated_at = ?
+          WHERE id = ?
+        `).run(
+          meta.repo,
+          meta.stars,
+          meta.forks,
+          meta.language,
+          JSON.stringify(meta.topics),
+          meta.updated_at,
+          now,
+          githubUrl,
+          now,
+          id
+        );
+
+        const updated = context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>;
+        return reply.send({ success: true, data: serializeProject(updated) });
+      } catch (err: unknown) {
+        const now = Date.now();
+        context.database.prepare("UPDATE projects SET github_sync_status = 'failed', updated_at = ? WHERE id = ?").run(now, id);
+
+        if (err instanceof GitHubSyncError) {
+          return reply.status(err.statusCode).send({
+            success: false,
+            error: err.message,
+            code: err.code,
+          });
+        }
+
+        request.log.error({ err }, 'Unexpected error during GitHub synchronization');
+        return reply.status(502).send({
+          success: false,
+          error: 'Failed to synchronize with GitHub due to an internal error',
+          code: 'NETWORK_ERROR',
+        });
+      }
+    },
+  });
+
+  fastify.patch('/:id', {
+    preHandler: [admin],
+    preValidation: [validateParams(idParamSchema), validateBody(projectUpdateSchema)],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const { assignments, values } = projectUpdateValues(request.body as Record<string, unknown>);
+      if (assignments.length === 0) {
+        return reply.status(400).send({ success: false, error: 'No fields to update', code: 'NO_UPDATES' });
+      }
+      values.push(Date.now(), id);
+      const result = context.database.prepare(`UPDATE projects SET ${assignments.join(', ')}, updated_at = ? WHERE id = ?`).run(...values);
+      if (result.changes === 0) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+      return { success: true, data: serializeProject(context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>) };
+    },
+  });
+
+  fastify.delete('/:id', {
+    preHandler: [admin],
+    preValidation: [validateParams(idParamSchema)],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const result = context.database.prepare('DELETE FROM projects WHERE id = ?').run(id);
+      if (result.changes === 0) {
+        return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
+      }
+      return reply.send({ success: true, message: 'Project deleted' });
+    },
   });
 }

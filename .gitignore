@@ -24,3 +24,14 @@ dist-ssr
 *.sw?
 claude.md
 PROJECT_MAP.md
+
+# Server secrets and local persistent state
+.env
+.env.*
+!.env.example
+server/data/*
+!server/data/.gitkeep
+server/uploads/*
+!server/uploads/.gitkeep
+server/uploads-test/
+server/coverage/

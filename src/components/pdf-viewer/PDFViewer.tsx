@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { vfs } from '../../lib/vfs';
-import { isFileNode } from '../../lib/vfs/nodes';
 import {
   Loader2,
   AlertCircle,
@@ -9,20 +8,24 @@ import {
   Minimize2,
   ZoomIn,
   ZoomOut,
+  ExternalLink,
 } from 'lucide-react';
 import { useWindowStore } from '../../stores/useWindowStore';
+import type { DesktopOpenRequest } from '../../types/desktop';
 import './PDFViewer.css';
 
 interface PDFViewerProps {
   windowId: string;
   filePath?: string;
-  onOpenRequest?: (request: any) => void;
+  onOpenRequest?: (request: DesktopOpenRequest) => void;
 }
 
-export function PDFViewer({ windowId, filePath: propFilePath, onOpenRequest }: PDFViewerProps) {
+export function PDFViewer({ windowId, filePath: propFilePath }: PDFViewerProps) {
   const { getWindow } = useWindowStore();
   const mimiWindow = getWindow(windowId);
   const windowFilePath = mimiWindow?.appParams?.path as string | undefined;
+  const isRemote = Boolean(mimiWindow?.appParams?.isRemote);
+  const htmlUrl = typeof mimiWindow?.appParams?.htmlUrl === 'string' ? mimiWindow.appParams.htmlUrl : null;
 
   const filePathToLoad = propFilePath || windowFilePath;
 
@@ -39,13 +42,19 @@ export function PDFViewer({ windowId, filePath: propFilePath, onOpenRequest }: P
 
   // Load PDF
   useEffect(() => {
-    if (filePathToLoad) {
+    if (isRemote && mimiWindow?.appParams?.pdfSrc) {
+      setPdfSrc(String(mimiWindow.appParams.pdfSrc));
+      const p = String(filePathToLoad || mimiWindow.appParams.title || 'document.pdf');
+      setFilePath(p);
+      setFileName(p.split('/').pop() || p);
+      setLoading(false);
+    } else if (filePathToLoad) {
       loadPDF(filePathToLoad);
     } else {
       setError('No file specified');
       setLoading(false);
     }
-  }, [filePathToLoad]);
+  }, [filePathToLoad, isRemote, mimiWindow?.appParams]);
 
   const loadPDF = useCallback(async (path: string) => {
     setLoading(true);
@@ -58,29 +67,23 @@ export function PDFViewer({ windowId, filePath: propFilePath, onOpenRequest }: P
 
     try {
       const result = vfs.stat(path);
-      if (!result.success) {
+      if (!result.success || !result.data) {
         setError(result.error || 'No such file or directory');
         setLoading(false);
         return;
       }
 
-      if (result.data!.type === 'directory') {
+      if (result.data.type === 'directory') {
         setError('Cannot open directory as PDF');
         setLoading(false);
         return;
       }
 
-      const node = vfs.getNodeByPath(path);
-      if (!node || !isFileNode(node)) {
-        setError('File not found in VFS');
-        setLoading(false);
-        return;
-      }
-
-      if (node.isBinary) {
+      const stat = result.data;
+      if (stat.isBinary) {
         // Built-in static asset - use assetPath directly
-        if (node.assetPath) {
-          setPdfSrc(node.assetPath);
+        if (stat.assetPath) {
+          setPdfSrc(stat.assetPath);
         } else {
           // Visitor upload - use readBinaryFile from IndexedDB
           const binaryResult = await vfs.readBinaryFile(path);
@@ -150,13 +153,6 @@ export function PDFViewer({ windowId, filePath: propFilePath, onOpenRequest }: P
     };
   }, [pdfSrc]);
 
-  const formatTime = (time: number) => {
-    if (isNaN(time) || !isFinite(time)) return '0:00';
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   if (loading) {
     return (
       <div className="pdf-viewer loading">
@@ -182,10 +178,41 @@ export function PDFViewer({ windowId, filePath: propFilePath, onOpenRequest }: P
         <div className="pdf-viewer-file-info">
           <FileText size={18} className="pdf-viewer-icon" />
           <div className="pdf-viewer-file-details">
-            <div className="pdf-viewer-file-name">{fileName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="pdf-viewer-file-name">{fileName}</span>
+              {isRemote && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '1px 6px',
+                    borderRadius: 3,
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  GitHub (Read-Only)
+                </span>
+              )}
+            </div>
             <div className="pdf-viewer-file-path">{filePath}</div>
           </div>
         </div>
+        {htmlUrl && (
+          <a
+            href={htmlUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pv-btn"
+            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, height: 28 }}
+            title="Open on GitHub"
+          >
+            <ExternalLink size={14} />
+            <span>GitHub ↗</span>
+          </a>
+        )}
       </div>
 
       <div className="pdf-viewer-toolbar">

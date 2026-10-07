@@ -1,7 +1,6 @@
 import type { Command } from '../commands';
 import { resolvePath, formatError } from '../commands';
 import { vfs } from '../../../lib/vfs';
-import type { AnyVFSNode } from '../../../types/vfs';
 
 export const lsCommand: Command = {
   name: 'ls',

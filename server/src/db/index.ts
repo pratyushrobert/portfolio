@@ -1,89 +1,126 @@
 import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { randomUUID } from 'crypto';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { randomBytes, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import { env } from '../config/env.js';
+import type { RuntimeConfig } from '../config/env.js';
+const schema = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+export type AppDatabase = ReturnType<typeof Database>;
 
-const DB_PATH = env.DATABASE_PATH;
-
-const syncDb = new Database(DB_PATH);
-syncDb.pragma('journal_mode = WAL');
-syncDb.pragma('foreign_keys = ON');
-
-const syncDbInstance = new Database(DB_PATH);
-syncDbInstance.pragma('journal_mode = WAL');
-syncDbInstance.pragma('foreign_keys = ON');
-
-const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
-syncDbInstance.exec(schema);
-
-// Ensure admin user exists
-const adminEmail = process.env.ADMIN_EMAIL || 'admin@mimios.local';
-const adminPassword = process.env.ADMIN_PASSWORD || 'mimiisbest@1@';
-
-const existing = syncDbInstance.prepare('SELECT id FROM users WHERE email = ?').get('admin@mimios.local');
-if (!existing) {
-  const passwordHash = bcrypt.hashSync('mimiisbest@1@', 12);
-  const adminId = randomUUID();
-  const now = Date.now();
-
-  syncDbInstance.prepare(`
-    INSERT INTO users (id, email, password_hash, name, role, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(randomUUID(), 'admin@mimios.local', bcrypt.hashSync('mimiisbest@1@', 12), 'Admin', 'admin', Date.now(), Date.now());
-
-  console.log('Created default admin user: admin@mimios.local');
-}
-
-// Ensure default site config exists
 const defaultConfigs = [
-  { key: 'site_name', value: 'MimiOS Portfolio', description: 'Site name displayed in header' },
-  { key: 'site_title', value: 'Full-stack Developer', description: 'Short title' },
-  { key: 'site_description', value: 'Building creative web experiences', description: 'Short description for SEO' },
-  { key: 'site_keywords', value: 'React, TypeScript, Node.js, Python, Go, Portfolio', description: 'SEO keywords' },
-  { key: 'contact_email', value: 'pratyush@example.com', description: 'Contact email' },
-  { key: 'contact_github', value: 'https://github.com/pratyush', description: 'GitHub profile' },
-  { key: 'contact_linkedin', value: 'https://linkedin.com/in/pratyush', description: 'LinkedIn profile' },
-  { key: 'contact_website', value: 'https://pratyush.dev', description: 'Personal website' },
-  { key: 'wallpaper_url', value: '', description: 'Desktop wallpaper URL' },
-  { key: 'wallpaper_position', value: 'center', description: 'Wallpaper position' },
-  { key: 'wallpaper_size', value: 'cover', description: 'Wallpaper size' },
-  { key: 'wallpaper_overlay', value: 'rgba(0, 0, 0, 0.3)', description: 'Wallpaper overlay' },
-  { key: 'wallpaper_color', value: '#1a1a2e', description: 'Wallpaper fallback color' },
-];
+  ['site_name', 'MimiOS Portfolio', 'Site name displayed in the header'],
+  ['site_title', 'Full-stack Developer', 'Short title'],
+  ['site_description', 'Building creative web experiences', 'Short description for SEO'],
+  ['site_keywords', 'React, TypeScript, Node.js, Python, Go, Portfolio', 'SEO keywords'],
+  ['contact_email', 'contact@example.com', 'Contact email'],
+  ['contact_github', 'https://github.com/', 'GitHub profile'],
+  ['contact_linkedin', 'https://linkedin.com/', 'LinkedIn profile'],
+  ['contact_website', '', 'Personal website'],
+  ['wallpaper_url', '', 'Desktop wallpaper URL'],
+  ['wallpaper_position', 'center', 'Wallpaper position'],
+  ['wallpaper_size', 'cover', 'Wallpaper size'],
+  ['wallpaper_overlay', 'rgba(0, 0, 0, 0.3)', 'Wallpaper overlay'],
+  ['wallpaper_color', '#08090d', 'Wallpaper fallback color'],
+  ['wallpaper_brightness', '100', 'Wallpaper brightness percentage'],
+  ['wallpaper_overlay_opacity', '30', 'Wallpaper overlay darkness percentage'],
+] as const;
 
-const insertConfig = syncDb.prepare(`
-  INSERT OR IGNORE INTO site_config (key, value, description, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?)
-`);
+function databasePath(config: RuntimeConfig): string {
+  if (config.DATABASE_PATH === ':memory:' || isAbsolute(config.DATABASE_PATH)) {
+    return config.DATABASE_PATH;
+  }
 
-const now = Date.now();
-for (const config of defaultConfigs) {
-  insertConfig.run(config.key, config.value, config.description, now, now);
+  return resolve(process.cwd(), config.DATABASE_PATH);
 }
 
-export const db = {
-  get: (sql: string, ...params: unknown[]) => syncDb.prepare(sql).get(...params),
-  all: (sql: string, ...params: unknown[]) => syncDb.prepare(sql).all(...params),
-  run: (sql: string, ...params: unknown[]) => syncDb.prepare(sql).run(...params),
-  exec: (sql: string) => syncDb.exec(sql),
-  prepare: (sql: string) => syncDb.prepare(sql),
-  pragma: (pragma: string) => syncDb.pragma(pragma),
-};
+function seedDatabase(database: AppDatabase, config: RuntimeConfig): void {
+  const now = Date.now();
+  const existing = database.prepare('SELECT id, password_hash FROM users WHERE email = ?').get(config.ADMIN_EMAIL) as
+    | { id: string; password_hash: string }
+    | undefined;
 
-export async function initializeDatabase(): Promise<void> {
-  // Already initialized synchronously
+  if (!existing) {
+    database.prepare(`
+      INSERT INTO users (id, email, password_hash, name, role, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(randomUUID(), config.ADMIN_EMAIL, bcrypt.hashSync(config.ADMIN_PASSWORD, 12), 'Administrator', 'admin', now, now);
+  } else if (!bcrypt.compareSync(config.ADMIN_PASSWORD, existing.password_hash)) {
+    database.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+      .run(bcrypt.hashSync(config.ADMIN_PASSWORD, 12), now, existing.id);
+    database.prepare('DELETE FROM sessions WHERE user_id = ?').run(existing.id);
+  }
+
+  const insertConfig = database.prepare(`
+    INSERT OR IGNORE INTO site_config (key, value, description, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  for (const [key, value, description] of defaultConfigs) {
+    insertConfig.run(key, value, description, now, now);
+  }
 }
 
-export function getDb() {
-  return db;
+function migrateDatabase(database: AppDatabase): void {
+  const columns = database.prepare('PRAGMA table_info(projects)').all() as Array<{ name: string }>;
+  const columnNames = new Set(columns.map((c) => c.name));
+
+  if (!columnNames.has('github_repo')) {
+    database.prepare('ALTER TABLE projects ADD COLUMN github_repo TEXT').run();
+  }
+  if (!columnNames.has('github_stars')) {
+    database.prepare('ALTER TABLE projects ADD COLUMN github_stars INTEGER NOT NULL DEFAULT 0').run();
+  }
+  if (!columnNames.has('github_forks')) {
+    database.prepare('ALTER TABLE projects ADD COLUMN github_forks INTEGER NOT NULL DEFAULT 0').run();
+  }
+  if (!columnNames.has('github_language')) {
+    database.prepare('ALTER TABLE projects ADD COLUMN github_language TEXT').run();
+  }
+  if (!columnNames.has('github_topics')) {
+    database.prepare("ALTER TABLE projects ADD COLUMN github_topics TEXT NOT NULL DEFAULT '[]'").run();
+  }
+  if (!columnNames.has('github_updated_at')) {
+    database.prepare('ALTER TABLE projects ADD COLUMN github_updated_at TEXT').run();
+  }
+  if (!columnNames.has('github_sync_status')) {
+    database.prepare("ALTER TABLE projects ADD COLUMN github_sync_status TEXT NOT NULL DEFAULT 'not_synced'").run();
+  }
+  if (!columnNames.has('github_synced_at')) {
+    database.prepare('ALTER TABLE projects ADD COLUMN github_synced_at INTEGER').run();
+  }
 }
 
-export function closeDb(): void {
-  // Database is synchronous, no close needed for better-sqlite3
+export function initializeDatabase(config: RuntimeConfig): AppDatabase {
+  const path = databasePath(config);
+  if (path !== ':memory:') {
+    mkdirSync(dirname(path), { recursive: true });
+  }
+
+  const database = new Database(path);
+  try {
+    database.pragma('journal_mode = WAL');
+    database.pragma('foreign_keys = ON');
+    database.pragma('busy_timeout = 5000');
+    database.transaction(() => {
+      database.exec(schema);
+      migrateDatabase(database);
+      if (database.pragma('user_version', { simple: true }) === 0) {
+        database.prepare('DELETE FROM sessions').run();
+        database.prepare('UPDATE users SET password_hash = ?').run(bcrypt.hashSync(randomBytes(32).toString('hex'), 12));
+        database.pragma('user_version = 1');
+      }
+      seedDatabase(database, config);
+    })();
+    return database;
+  } catch (error) {
+    database.close();
+    throw error;
+  }
+}
+
+export function closeDatabase(database: AppDatabase): void {
+  if (database.open) {
+    database.close();
+  }
 }

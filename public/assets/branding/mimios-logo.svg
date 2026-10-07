@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" fill="none">
+  <!-- Outer Ambient Ring -->
+  <circle cx="120" cy="120" r="104" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.12" stroke-dasharray="6 4"/>
+  <circle cx="120" cy="120" r="92" stroke="#ffffff" stroke-width="2" stroke-opacity="0.35"/>
+  
+  <!-- Stylized Mimi Cat Silhouette / Kernel Icon -->
+  <g transform="translate(120, 120)">
+    <!-- Ears -->
+    <path d="M -46 -24 L -62 -72 L -22 -52" 
+          stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M 46 -24 L 62 -72 L 22 -52" 
+          stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    
+    <!-- Cranium / Brow line -->
+    <path d="M -22 -52 C -8 -58 8 -58 22 -52" 
+          stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          
+    <!-- Head Outline -->
+    <path d="M -46 -24 C -54 6 -52 38 -32 54 C -16 66 16 66 32 54 C 52 38 54 6 46 -24" 
+          stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          
+    <!-- Eyes (sleek horizontal precision slits) -->
+    <path d="M -30 2 L -14 2" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 14 2 L 30 2" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Nose / Core Node -->
+    <polygon points="0,16 -5,22 5,22" fill="#ffffff" fill-opacity="0.9"/>
+    
+    <!-- Whisker Accents -->
+    <line x1="-38" y1="20" x2="-56" y2="18" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <line x1="-38" y1="28" x2="-54" y2="30" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <line x1="38" y1="20" x2="56" y2="18" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <line x1="38" y1="28" x2="54" y2="30" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+  </g>
+</svg>

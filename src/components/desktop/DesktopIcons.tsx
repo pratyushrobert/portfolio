@@ -1,136 +1,201 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { Terminal, FolderOpen, FileText, Settings } from 'lucide-react';
-import { useDesktopStore, useDesktopActions } from '../../stores/useDesktopStore';
-import { useWindowStore } from '../../stores/useWindowStore';
-import type { DesktopIcon } from '../../types/desktop';
+import { useRef, useEffect, useCallback } from 'react';
+import {
+  useDesktopStore,
+  xToGridCol,
+  yToGridRow,
+  gridColToX,
+  gridRowToY,
+} from '../../stores/useDesktopStore';
+import { getAppIcon } from '../../lib/icons';
+import type { DesktopIcon, PanelPosition } from '../../types/desktop';
 import './Desktop.css';
 
-const ICON_COMPONENTS: Record<string, React.ComponentType<{ size?: number }>> = {
-  Terminal,
-  FolderOpen,
-  FileText,
-  Settings,
-};
+const DRAG_THRESHOLD = 5;
 
-// Single authoritative drag state - one ref for the entire desktop
-const dragStateRef = {
-  id: null as string | null,
-  startPointerX: 0,
-  startPointerY: 0,
-  startIconX: 0,
-  startIconY: 0,
-};
-
-interface DesktopIconProps {
+interface DesktopIconItemProps {
   icon: DesktopIcon;
   isSelected: boolean;
+  panelPosition: PanelPosition;
   onSelect: (id: string, e?: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
+  onContextMenuIcon?: (icon: DesktopIcon, e: React.MouseEvent) => void;
 }
 
-function DesktopIconItem({ icon, isSelected, onSelect, onDoubleClick }: DesktopIconProps) {
-  const IconComponent = ICON_COMPONENTS[icon.icon] || FolderOpen;
+function DesktopIconItem({
+  icon,
+  isSelected,
+  panelPosition,
+  onSelect,
+  onDoubleClick,
+  onContextMenuIcon,
+}: DesktopIconItemProps) {
+  const IconComponent = getAppIcon(icon.appId || icon.icon);
   const ref = useRef<HTMLDivElement>(null);
-  const { updateIconPosition } = useDesktopActions();
+  const moveIconWithCollision = useDesktopStore(state => state.moveIconWithCollision);
 
-  // Stable handler refs - same functions for all icons
-  const handlePointerMoveRef = useRef<(e: PointerEvent) => void>();
-  const handlePointerUpRef = useRef<(e: PointerEvent) => void>();
+  const sessionRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    isDragging: boolean;
+    pointerId: number;
+  } | null>(null);
 
-  // Initialize handler refs once per component
+  const justDraggedRef = useRef(false);
+
+  // Stable handler refs
+  const handlePointerMoveRef = useRef<((e: PointerEvent) => void) | undefined>(undefined);
+  const handlePointerUpRef = useRef<((e: PointerEvent) => void) | undefined>(undefined);
+
   useEffect(() => {
     handlePointerMoveRef.current = (e: PointerEvent) => {
-      if (dragStateRef.id !== icon.id) return;
-      e.preventDefault();
-      const dx = e.clientX - dragStateRef.startPointerX;
-      const dy = e.clientY - dragStateRef.startPointerY;
-      const el = ref.current;
-      if (el) {
-        el.style.left = `${dragStateRef.startIconX + dx}px`;
-        el.style.top = `${dragStateRef.startIconY + dy}px`;
+      const session = sessionRef.current;
+      if (!session || session.pointerId !== e.pointerId) return;
+
+      const dx = e.clientX - session.startX;
+      const dy = e.clientY - session.startY;
+
+      if (!session.isDragging) {
+        if (Math.hypot(dx, dy) >= DRAG_THRESHOLD) {
+          session.isDragging = true;
+          document.body.style.userSelect = 'none';
+          ref.current?.classList.add('dragging');
+          try {
+            ref.current?.setPointerCapture(session.pointerId);
+          } catch {
+            // ignore pointer capture errors
+          }
+        }
+      }
+
+      if (session.isDragging && ref.current) {
+        e.preventDefault();
+        ref.current.style.left = `${session.originX + dx}px`;
+        ref.current.style.top = `${session.originY + dy}px`;
       }
     };
 
     handlePointerUpRef.current = (e: PointerEvent) => {
-      if (dragStateRef.id !== icon.id) return;
-      const el = ref.current;
-      if (el) {
+      const session = sessionRef.current;
+      if (!session || session.pointerId !== e.pointerId) return;
+
+      if (session.isDragging) {
         try {
-          el.releasePointerCapture(e.pointerId);
+          ref.current?.releasePointerCapture(session.pointerId);
         } catch {
           // ignore
         }
+        document.body.style.userSelect = '';
+        ref.current?.classList.remove('dragging');
+
+        const dx = e.clientX - session.startX;
+        const dy = e.clientY - session.startY;
+        const rawX = session.originX + dx;
+        const rawY = session.originY + dy;
+
+        // Deterministically compute target grid cell
+        const targetCol = Math.max(0, xToGridCol(rawX, panelPosition));
+        const targetRow = Math.max(0, yToGridRow(rawY, panelPosition));
+        const snappedX = gridColToX(targetCol, panelPosition);
+        const snappedY = gridRowToY(targetRow, panelPosition);
+
+        // Immediately update DOM style to avoid remaining at raw dragged coordinates
+        if (ref.current) {
+          ref.current.style.left = `${snappedX}px`;
+          ref.current.style.top = `${snappedY}px`;
+        }
+
+        // Commit change to authoritative store
+        moveIconWithCollision(icon.id, targetCol, targetRow, icon.col, icon.row);
+
+        justDraggedRef.current = true;
+        setTimeout(() => {
+          justDraggedRef.current = false;
+        }, 80);
       }
-      const dx = e.clientX - dragStateRef.startPointerX;
-      const dy = e.clientY - dragStateRef.startPointerY;
-      const finalX = Math.max(0, dragStateRef.startIconX + dx);
-      const finalY = Math.max(0, dragStateRef.startIconY + dy);
-      updateIconPosition(icon.id, finalX, finalY);
-      if (el) {
-        el.style.left = `${finalX}px`;
-        el.style.top = `${finalY}px`;
+
+      sessionRef.current = null;
+      if (handlePointerMoveRef.current) {
+        document.removeEventListener('pointermove', handlePointerMoveRef.current);
       }
-      dragStateRef.id = null;
-      document.body.style.userSelect = '';
-      document.removeEventListener('pointermove', handlePointerMoveRef.current!);
-      document.removeEventListener('pointerup', handlePointerUpRef.current!);
+      if (handlePointerUpRef.current) {
+        document.removeEventListener('pointerup', handlePointerUpRef.current);
+      }
     };
-  }, [icon.id, updateIconPosition]);
+  }, [icon.id, icon.col, icon.row, panelPosition, moveIconWithCollision]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.button !== 0) return;
-    const el = ref.current;
-    if (!el) return;
-    e.preventDefault();
+    if (e.button !== 0) return; // Only primary button initiates drag
+    sessionRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: icon.x,
+      originY: icon.y,
+      isDragging: false,
+      pointerId: e.pointerId,
+    };
 
-    // Capture pointer on this element
-    el.setPointerCapture(e.pointerId);
-
-    // Record drag state
-    dragStateRef.id = icon.id;
-    dragStateRef.startPointerX = e.clientX;
-    dragStateRef.startPointerY = e.clientY;
-    dragStateRef.startIconX = icon.x;
-    dragStateRef.startIconY = icon.y;
-
-    document.body.style.userSelect = 'none';
-
-    // Add document-level listeners (pointer capture retargets events to element)
     document.addEventListener('pointermove', handlePointerMoveRef.current!);
     document.addEventListener('pointerup', handlePointerUpRef.current!);
-  }, [icon.id, icon.x, icon.y]);
+  }, [icon.x, icon.y]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (dragStateRef.id === icon.id) {
-        dragStateRef.id = null;
+      if (sessionRef.current) {
+        sessionRef.current = null;
         document.body.style.userSelect = '';
-        if (handlePointerMoveRef.current) document.removeEventListener('pointermove', handlePointerMoveRef.current);
-        if (handlePointerUpRef.current) document.removeEventListener('pointerup', handlePointerUpRef.current);
+        if (handlePointerMoveRef.current) {
+          document.removeEventListener('pointermove', handlePointerMoveRef.current);
+        }
+        if (handlePointerUpRef.current) {
+          document.removeEventListener('pointerup', handlePointerUpRef.current);
+        }
       }
     };
-  }, [icon.id]);
+  }, []);
 
   const handleClick = (e: React.MouseEvent) => {
-    if (dragStateRef.id !== icon.id) onSelect(icon.id, e);
+    if (justDraggedRef.current) return;
+    onSelect(icon.id, e);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (justDraggedRef.current) return;
     onDoubleClick(icon.id);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(icon.id, e);
+    onContextMenuIcon?.(icon, e);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onDoubleClick(icon.id);
+    } else if (e.key === ' ') {
+      e.preventDefault();
+      onSelect(icon.id);
+    }
   };
 
   return (
     <div
       ref={ref}
+      data-icon-id={icon.id}
       className={`desktop-icon ${isSelected ? 'selected' : ''}`}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onContextMenu={handleContextMenu}
+      onKeyDown={handleKeyDown}
       style={{
-        left: icon.x,
-        top: icon.y,
+        left: `${icon.x}px`,
+        top: `${icon.y}px`,
       }}
       tabIndex={0}
       role="button"
@@ -138,63 +203,106 @@ function DesktopIconItem({ icon, isSelected, onSelect, onDoubleClick }: DesktopI
       aria-pressed={isSelected}
     >
       <div className="icon-image">
-        <IconComponent size={32} />
+        <IconComponent size={28} />
       </div>
-      <span className="icon-label">{icon.label}</span>
+      <span className="icon-label" title={icon.label}>
+        {icon.label}
+      </span>
     </div>
   );
 }
 
-export function DesktopIcons() {
-  const icons = useDesktopStore(state => state.icons);
-  const { openWindow } = useWindowStore();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const desktopRef = useRef<HTMLDivElement>(null);
+export interface DesktopIconsProps {
+  selectedId: string | null;
+  onSelect: (id: string | null, e?: React.MouseEvent) => void;
+  onDoubleClick: (id: string) => void;
+  onContextMenuIcon?: (icon: DesktopIcon, e: React.MouseEvent) => void;
+}
 
+export function DesktopIcons({
+  selectedId,
+  onSelect,
+  onDoubleClick,
+  onContextMenuIcon,
+}: DesktopIconsProps) {
+  const icons = useDesktopStore(state => state.icons);
+  const panelPosition = useDesktopStore(state => state.panelPosition);
+  const snapIconsToGrid = useDesktopStore(state => state.snapIconsToGrid);
+
+  // Align and sanitize grid on mount to ensure valid col/row coordinates
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (e.target === desktopRef.current) {
-        setSelectedId(null);
+    snapIconsToGrid();
+  }, [snapIconsToGrid]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        onSelect(null);
+        return;
+      }
+
+      if (!selectedId) {
+        if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key) && icons.length > 0) {
+          e.preventDefault();
+          onSelect(icons[0].id);
+        }
+        return;
+      }
+
+      const currentIndex = icons.findIndex(i => i.id === selectedId);
+      if (currentIndex === -1) return;
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onDoubleClick(selectedId);
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const nextIndex = (currentIndex + 1) % icons.length;
+        onSelect(icons[nextIndex].id);
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const prevIndex = (currentIndex - 1 + icons.length) % icons.length;
+        onSelect(icons[prevIndex].id);
       }
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
 
-  const handleSelect = (id: string, e?: React.MouseEvent) => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedId, icons, onSelect, onDoubleClick]);
+
+  const handleSelectIcon = (id: string, e?: React.MouseEvent) => {
     if (e?.ctrlKey || e?.metaKey) {
-      setSelectedId(prev => (prev === id ? null : id));
+      onSelect(selectedId === id ? null : id, e);
     } else {
-      setSelectedId(id);
+      onSelect(id, e);
     }
-  };
-
-  const handleDoubleClick = (id: string) => {
-    const icon = icons.find(i => i.id === id);
-    if (!icon) return;
-    openWindow({
-      id: `${icon.appId}-${Date.now()}`,
-      appId: icon.appId,
-      title: icon.label,
-      icon: ICON_COMPONENTS[icon.icon] || FolderOpen,
-      x: 100 + Math.random() * 200,
-      y: 100 + Math.random() * 150,
-      width: 800,
-      height: 600,
-      isMinimized: false,
-      isMaximized: false,
-    });
   };
 
   return (
-    <div ref={desktopRef} className="desktop-icons" role="list" aria-label="Desktop icons">
+    <div className="desktop-icons" role="list" aria-label="Desktop icons">
       {icons.map(icon => (
         <DesktopIconItem
           key={icon.id}
           icon={icon}
+          panelPosition={panelPosition}
           isSelected={selectedId === icon.id}
-          onSelect={handleSelect}
-          onDoubleClick={handleDoubleClick}
+          onSelect={handleSelectIcon}
+          onDoubleClick={onDoubleClick}
+          onContextMenuIcon={onContextMenuIcon}
         />
       ))}
     </div>

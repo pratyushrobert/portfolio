@@ -1,63 +1,112 @@
-/**
- * MimiOS Admin Authentication
- *
- * DEVELOPMENT ONLY - This is a temporary static password implementation.
- * Will be replaced with proper server-side authentication before production.
- *
- * DO NOT use this in production.
- * DO NOT store the password in localStorage/IndexedDB.
- * DO NOT expose the password in logs, error messages, or terminal history.
- */
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { authApi } from '../api/auth';
+import type { AdminUser, LoginCredentials } from '../api/auth';
+import { ApiError, getApiErrorMessage, onUnauthorized } from '../api/client';
 
-const DEV_ADMIN_PASSWORD = 'mimiisbest@1@';
+export type AdminAuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
-/**
- * Authenticate admin with the provided password.
- *
- * @param password - The password to verify
- * @returns true if authentication succeeds
- */
-export function authenticateAdmin(password: string): boolean {
-  return password === DEV_ADMIN_PASSWORD;
+interface AdminAuthSnapshot {
+  status: AdminAuthStatus;
+  user: AdminUser | null;
+  error: string | null;
 }
 
-/**
- * Check if a session is authenticated.
- * For development, this just checks a session flag.
- * In production, this would validate a JWT or session token.
- *
- * @returns true if admin is authenticated
- */
-export function isAdminAuthenticated(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return sessionStorage.getItem('mimios_admin_auth') === 'true';
-  } catch {
-    return false;
-  }
+let snapshot: AdminAuthSnapshot = { status: 'loading', user: null, error: null };
+const serverSnapshot: AdminAuthSnapshot = { status: 'unauthenticated', user: null, error: null };
+let checkPromise: Promise<AdminUser | null> | null = null;
+let authGeneration = 0;
+const listeners = new Set<() => void>();
+
+function emit(next: AdminAuthSnapshot): void {
+  snapshot = next;
+  for (const listener of listeners) listener();
 }
 
-/**
- * Set admin authentication state.
- *
- * @param authenticated - Whether admin is authenticated
- */
-export function setAdminAuthenticated(authenticated: boolean): void {
-  if (typeof window === 'undefined') return;
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
+
+function getSnapshot(): AdminAuthSnapshot {
+  return snapshot;
+}
+
+function getServerSnapshot(): AdminAuthSnapshot {
+  return serverSnapshot;
+}
+
+export async function checkAdminSession(): Promise<AdminUser | null> {
+  if (checkPromise) return checkPromise;
+
+  const generation = authGeneration;
+  emit({ status: 'loading', user: null, error: null });
+  checkPromise = authApi.me()
+    .then((user) => {
+      if (generation !== authGeneration) return null;
+      emit({ status: 'authenticated', user, error: null });
+      return user;
+    })
+    .catch((error: unknown) => {
+      if (generation !== authGeneration) return null;
+      if (error instanceof ApiError && error.status === 401) {
+        emit({ status: 'unauthenticated', user: null, error: null });
+        return null;
+      }
+      emit({ status: 'unauthenticated', user: null, error: getApiErrorMessage(error) });
+      return null;
+    })
+    .finally(() => {
+      if (generation === authGeneration) checkPromise = null;
+    });
+
+  return checkPromise;
+}
+
+export function invalidateAdminAuth(): void {
+  authGeneration += 1;
+  checkPromise = null;
+  emit({ status: 'unauthenticated', user: null, error: null });
+}
+
+const unsubscribe = onUnauthorized(invalidateAdminAuth);
+if (import.meta.hot) import.meta.hot.dispose(unsubscribe);
+
+export async function loginAdmin(credentials: LoginCredentials): Promise<AdminUser> {
+  authGeneration += 1;
+  checkPromise = null;
+  const generation = authGeneration;
+  emit({ status: 'loading', user: null, error: null });
   try {
-    if (authenticated) {
-      sessionStorage.setItem('mimios_admin_auth', 'true');
-    } else {
-      sessionStorage.removeItem('mimios_admin_auth');
+    await authApi.login(credentials);
+    // Confirm the HttpOnly cookie through the backend instead of trusting a local flag.
+    const user = await authApi.me();
+    if (generation !== authGeneration) throw new ApiError('Please sign in again.', 401, 'SESSION_CHANGED');
+    emit({ status: 'authenticated', user, error: null });
+    return user;
+  } catch (error) {
+    if (generation === authGeneration) {
+      emit({ status: 'unauthenticated', user: null, error: getApiErrorMessage(error) });
     }
-  } catch {
-    // Ignore storage errors
+    throw error;
   }
 }
 
-/**
- * Clear admin authentication.
- */
-export function clearAdminAuth(): void {
-  setAdminAuthenticated(false);
+export async function logoutAdmin(): Promise<void> {
+  authGeneration += 1;
+  checkPromise = null;
+  try {
+    await authApi.logout();
+  } finally {
+    // Fail closed locally even if the network prevents confirming server logout.
+    invalidateAdminAuth();
+  }
+}
+
+export function useAdminAuth() {
+  const current = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  useEffect(() => {
+    if (snapshot.status === 'loading') void checkAdminSession();
+  }, []);
+  const refresh = useCallback(() => checkAdminSession(), []);
+  return { ...current, refresh };
 }

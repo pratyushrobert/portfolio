@@ -1,19 +1,48 @@
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { z } from 'zod';
 
-dotenv.config();
+export const serverRoot = fileURLToPath(new URL('../../', import.meta.url));
 
-export const env = {
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: parseInt(process.env.PORT || '3001', 10),
-  DATABASE_PATH: process.env.DATABASE_PATH || './data/mimios.db',
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@mimios.local',
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'mimiisbest@1@',
-  SESSION_SECRET: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
-  CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  UPLOAD_MAX_SIZE: parseInt(process.env.UPLOAD_MAX_SIZE || '52428800', 10),
-  UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: parseInt(process.env.PORT || '3001', 10),
-} as const;
+const configSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  HOST: z.string().min(1).default('127.0.0.1'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3001),
+  DATABASE_PATH: z.string().min(1).default('./data/mimios.db'),
+  ADMIN_EMAIL: z.string().trim().email().max(254).transform((email) => email.toLowerCase()),
+  ADMIN_PASSWORD: z.string().min(12).refine((value) => Buffer.byteLength(value) <= 72, 'Password must be at most 72 UTF-8 bytes')
+    .refine((value) => !value.startsWith('replace-'), 'Replace the example password'),
+  SESSION_SECRET: z.string().min(32).max(512).refine((value) => !value.startsWith('replace-'), 'Replace the example secret'),
+  CORS_ORIGIN: z.string().default('http://localhost:5173').refine((value) => value.split(',').every((origin) => {
+    try {
+      const url = new URL(origin.trim());
+      return ['http:', 'https:'].includes(url.protocol) && url.origin === origin.trim();
+    } catch {
+      return false;
+    }
+  }), 'Use explicit HTTP(S) origins separated by commas, without paths or wildcards'),
+  UPLOAD_MAX_SIZE: z.coerce.number().int().min(1).max(100 * 1024 * 1024).default(50 * 1024 * 1024),
+  UPLOAD_DIR: z.string().min(1).default('./uploads'),
+  GITHUB_TOKEN: z.string().trim().optional().default(''),
+  GITHUB_USERNAME: z.string().trim().min(1).default('pratyushrobert'),
+});
 
-export type Env = typeof env;
+export type RuntimeConfig = z.infer<typeof configSchema>;
+
+export function loadConfig(source: NodeJS.ProcessEnv = process.env): RuntimeConfig {
+  const parsed = configSchema.safeParse(source);
+  if (!parsed.success) {
+    throw new Error(`Invalid server environment: ${parsed.error.issues.map((issue) => issue.path.join('.')).join(', ')}`);
+  }
+  return {
+    ...parsed.data,
+    DATABASE_PATH: parsed.data.DATABASE_PATH === ':memory:' ? ':memory:' : resolve(serverRoot, parsed.data.DATABASE_PATH),
+    UPLOAD_DIR: resolve(serverRoot, parsed.data.UPLOAD_DIR),
+  };
+}
+
+export function loadEnvironment(): RuntimeConfig {
+  dotenv.config({ path: resolve(serverRoot, '.env') });
+  return loadConfig();
+}

@@ -1,9 +1,6 @@
 .os-desktop-icons {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 44px; /* Account for taskbar */
+  inset: 0;
   pointer-events: none;
   overflow: hidden;
   z-index: 10;

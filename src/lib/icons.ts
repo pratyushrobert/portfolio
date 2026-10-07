@@ -8,17 +8,26 @@ import {
   File,
   Lock,
   Code,
+  Search,
   FileImage,
   FileVideo,
   FileAudio,
   FileCode,
   FileJson,
   FileText as FileTextIcon,
+  FolderGit2,
+  Cpu,
+  Briefcase,
+  Award,
+  User,
+  Mail,
+  Gamepad2,
 } from 'lucide-react';
 
 export type AppIconName =
   | 'terminal'
   | 'files'
+  | 'file-manager'
   | 'text-viewer'
   | 'editor'
   | 'image-viewer'
@@ -27,11 +36,22 @@ export type AppIconName =
   | 'resume-viewer'
   | 'admin-login'
   | 'admin-portal'
-  | 'settings';
+  | 'settings'
+  | 'search'
+  | 'projects'
+  | 'project-viewer'
+  | 'skills'
+  | 'experience'
+  | 'certificates'
+  | 'about'
+  | 'contact'
+  | 'resume'
+  | 'snake';
 
-export const APP_ICONS: Record<AppIconName, React.ComponentType<{ size?: number }>> = {
+export const APP_ICONS: Record<AppIconName, React.ComponentType<{ size?: number; className?: string }>> = {
   terminal: Terminal,
   files: FolderOpen,
+  'file-manager': FolderOpen,
   'text-viewer': FileTextIcon,
   editor: Code,
   'image-viewer': Image,
@@ -41,9 +61,51 @@ export const APP_ICONS: Record<AppIconName, React.ComponentType<{ size?: number 
   'admin-login': Lock,
   'admin-portal': Settings,
   settings: Settings,
+  search: Search,
+  projects: FolderGit2,
+  'project-viewer': Code,
+  skills: Cpu,
+  experience: Briefcase,
+  certificates: Award,
+  about: User,
+  contact: Mail,
+  resume: FileText,
+  snake: Gamepad2,
 };
 
-export const MIME_TYPE_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
+// Common aliases and legacy identifier lookups
+const ALIASES: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  filemanager: FolderOpen,
+  folderopen: FolderOpen,
+  folder: FolderOpen,
+  files: FolderOpen,
+  terminal: Terminal,
+  settings: Settings,
+  editor: Code,
+  code: Code,
+  edit: Code,
+  search: Search,
+  textviewer: FileTextIcon,
+  imageviewer: Image,
+  videoplayer: Video,
+  pdfviewer: FileText,
+  resumeviewer: FileText,
+  filetext: FileTextIcon,
+  adminlogin: Lock,
+  adminportal: Settings,
+  lock: Lock,
+  projects: FolderGit2,
+  projectviewer: Code,
+  skills: Cpu,
+  experience: Briefcase,
+  certificates: Award,
+  about: User,
+  profile: User,
+  contact: Mail,
+  resume: FileText,
+};
+
+export const MIME_TYPE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   'image/png': FileImage,
   'image/jpeg': FileImage,
   'image/gif': FileImage,
@@ -71,10 +133,33 @@ export const MIME_TYPE_ICONS: Record<string, React.ComponentType<{ size?: number
   'audio/ogg': FileAudio,
 };
 
-export function getAppIcon(appId: string, mimeType?: string): React.ComponentType<{ size?: number }> {
-  // First try to get icon by appId
-  if (appId && APP_ICONS[appId as AppIconName]) {
-    return APP_ICONS[appId as AppIconName];
+export function getAppIcon(
+  appId: string | React.ComponentType<{ size?: number; className?: string }>,
+  mimeType?: string
+): React.ComponentType<{ size?: number; className?: string }> {
+  // If already a component (function or forwardRef object)
+  if (appId && (typeof appId === 'function' || (typeof appId === 'object' && appId !== null && '$$typeof' in appId))) {
+    return appId as React.ComponentType<{ size?: number; className?: string }>;
+  }
+
+  if (typeof appId !== 'string') {
+    return File;
+  }
+
+  // First try direct lookup by appId
+  if (appId) {
+    if (APP_ICONS[appId as AppIconName]) {
+      return APP_ICONS[appId as AppIconName];
+    }
+    const clean = appId.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const [key, icon] of Object.entries(APP_ICONS)) {
+      if (key.toLowerCase().replace(/[^a-z0-9]/g, '') === clean) {
+        return icon;
+      }
+    }
+    if (ALIASES[clean]) {
+      return ALIASES[clean];
+    }
   }
 
   // Fall back to mimeType
@@ -86,7 +171,7 @@ export function getAppIcon(appId: string, mimeType?: string): React.ComponentTyp
   return File;
 }
 
-export function getFileIcon(mimeType: string, isDirectory: boolean): React.ComponentType<{ size?: number }> {
+export function getFileIcon(mimeType: string, isDirectory: boolean): React.ComponentType<{ size?: number; className?: string }> {
   if (isDirectory) {
     return FolderOpen;
   }

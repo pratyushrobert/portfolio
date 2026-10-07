@@ -1,64 +1,94 @@
-import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
-import { db } from '../db/index.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { randomUUID } from 'node:crypto';
+import type { FastifyInstance } from 'fastify';
+import { authenticate } from '../middleware/auth.js';
+import { validateBody, validateParams } from '../middleware/validation.js';
+import { experienceCreateSchema, experienceUpdateSchema, idParamSchema } from '../schemas/index.js';
+import type { RouteContext } from './context.js';
+import { publicExperience } from './context.js';
 
-const experienceSchema = z.object({
-  organization: z.string().min(1).max(200),
-  role: z.string().min(1).max(100),
-  start_date: z.string().regex(/^\d{4}-\d{2}$/),
-  end_date: z.string().regex(/^\d{4}-\d{2}$/).nullable().optional(),
-  description: z.string().max(2000).optional(),
-  technologies: z.array(z.string()).default([]),
-  link: z.string().url().nullable().optional(),
-  sort_order: z.number().int().min(0).default(0),
-  visibility: z.boolean().default(true),
-});
+type ExperienceInput = {
+  organization: string;
+  role: string;
+  start_date: string;
+  end_date?: string | null;
+  description: string;
+  technologies: string[];
+  link?: string | null;
+  sort_order: number;
+  visibility: boolean;
+};
 
-export async function experienceRoutes(fastify: FastifyInstance) {
-  fastify.get('/', async (request, reply) => {
-    const experience = db.prepare('SELECT * FROM experience WHERE visibility = 1 ORDER BY sort_order, start_date DESC').all();
-    return { success: true, data: experience };
-  });
-
-  fastify.get('/admin', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const experience = db.prepare('SELECT * FROM experience ORDER BY sort_order, start_date DESC').all();
-    return { success: true, data: experience };
-  });
-
-  fastify.post('/admin', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const id = crypto.randomUUID();
-    const now = Date.now();
-    const { organization, role, start_date, end_date, description, technologies, link, sort_order, visibility } = request.body as any;
-
-    db.prepare(`
-      INSERT INTO experience (id, organization, role, start_date, end_date, description, technologies, link, sort_order, visibility, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(crypto.randomUUID(), request.body.organization, request.body.role, request.body.start_date, request.body.end_date || null,
-      request.body.description || null, JSON.stringify(request.body.technologies || []), request.body.link || null,
-      request.body.sort_order || 0, request.body.visibility ? 1 : 0, Date.now(), Date.now());
-
-      const exp = db.prepare('SELECT * FROM experience WHERE id = ?').get(crypto.randomUUID());
-      return reply.status(201).send({ success: true, data: exp });
+function updateValues(body: Record<string, unknown>): { assignments: string[]; values: unknown[] } {
+  const allowed = new Set(['organization', 'role', 'start_date', 'end_date', 'description', 'technologies', 'link', 'sort_order', 'visibility']);
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+  for (const [key, value] of Object.entries(body)) {
+    if (allowed.has(key)) {
+      assignments.push(`${key} = ?`);
+      values.push(key === 'technologies' ? JSON.stringify(value) : key === 'visibility' ? (value ? 1 : 0) : value);
     }
+  }
+  return { assignments, values };
+}
+
+export async function experienceRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
+  fastify.get('/', async () => {
+    const rows = context.database.prepare('SELECT * FROM experience WHERE visibility = 1 ORDER BY sort_order, start_date DESC').all() as Array<Record<string, unknown>>;
+    return { success: true, data: rows.map(publicExperience) };
+  });
+}
+
+export async function experienceAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
+  const admin = authenticate(context.authService);
+  fastify.get('/', { preHandler: [admin] }, async () => {
+    const rows = context.database.prepare('SELECT * FROM experience ORDER BY sort_order, start_date DESC').all() as Array<Record<string, unknown>>;
+    return { success: true, data: rows.map(publicExperience) };
   });
 
-  fastify.patch('/admin/:id', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const updates = Object.entries(request.body).filter(([, v]) => v !== undefined);
-    if (!updates.length) return reply.status(400).send({ success: false, error: 'No updates', code: 'NO_UPDATES' });
-
-    const fields = Object.keys(request.body).map(k => `${k} = ?`).join(', ');
-    const values = [...Object.values(request.body), Date.now(), request.params.id];
-    db.prepare(`UPDATE experience SET ${Object.keys(request.body).map(k => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`).run(...Object.values(request.body), Date.now(), request.params.id);
-
-    const exp = db.prepare('SELECT * FROM experience WHERE id = ?').get(request.params.id);
-    return { success: true, data: exp };
+  fastify.post('/', {
+    preHandler: [admin],
+    preValidation: [validateBody(experienceCreateSchema)],
+    handler: async (request, reply) => {
+      const data = request.body as ExperienceInput;
+      const id = randomUUID();
+      const now = Date.now();
+      context.database.prepare(`
+        INSERT INTO experience (id, organization, role, start_date, end_date, description, technologies, link, sort_order, visibility, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, data.organization, data.role, data.start_date, data.end_date ?? null, data.description, JSON.stringify(data.technologies), data.link ?? null,
+        data.sort_order, data.visibility ? 1 : 0, now, now);
+      return reply.status(201).send({ success: true, data: publicExperience(context.database.prepare('SELECT * FROM experience WHERE id = ?').get(id) as Record<string, unknown>) });
+    },
   });
 
-  fastify.delete('/admin/:id', { preHandler: [authenticate, requireRole('admin')] }, async (request, reply) => {
-    const result = db.prepare('DELETE FROM experience WHERE id = ?').run(request.params.id);
-    if (!result.changes) return fastify.httpErrors.notFound('Experience not found');
-    return { success: true, message: 'Experience deleted' };
+  fastify.patch('/:id', {
+    preHandler: [admin],
+    preValidation: [validateParams(idParamSchema), validateBody(experienceUpdateSchema)],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const { assignments, values } = updateValues(request.body as Record<string, unknown>);
+      if (assignments.length === 0) {
+        return reply.status(400).send({ success: false, error: 'No fields to update', code: 'NO_UPDATES' });
+      }
+      values.push(Date.now(), id);
+      const result = context.database.prepare(`UPDATE experience SET ${assignments.join(', ')}, updated_at = ? WHERE id = ?`).run(...values);
+      if (result.changes === 0) {
+        return reply.status(404).send({ success: false, error: 'Experience not found', code: 'NOT_FOUND' });
+      }
+      return { success: true, data: publicExperience(context.database.prepare('SELECT * FROM experience WHERE id = ?').get(id) as Record<string, unknown>) };
+    },
+  });
+
+  fastify.delete('/:id', {
+    preHandler: [admin],
+    preValidation: [validateParams(idParamSchema)],
+    handler: async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const result = context.database.prepare('DELETE FROM experience WHERE id = ?').run(id);
+      if (result.changes === 0) {
+        return reply.status(404).send({ success: false, error: 'Experience not found', code: 'NOT_FOUND' });
+      }
+      return reply.send({ success: true, message: 'Experience deleted' });
+    },
   });
 }

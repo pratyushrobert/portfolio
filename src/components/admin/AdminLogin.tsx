@@ -1,6 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useWindowStore } from '../../stores/useWindowStore';
-import { authenticateAdmin, setAdminAuthenticated, clearAdminAuth } from '../../lib/auth/adminAuth';
+import { getApiErrorMessage } from '../../lib/api/client';
+import { loginAdmin } from '../../lib/auth/adminAuth';
 import './AdminLogin.css';
 
 interface AdminLoginProps {
@@ -9,40 +11,35 @@ interface AdminLoginProps {
 
 export function AdminLogin({ windowId }: AdminLoginProps) {
   const { closeWindow } = useWindowStore();
+  const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Focus password input on mount
   useEffect(() => {
-    passwordRef.current?.focus();
-  }, []);
-
-  // Handle Enter key
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit();
-    }
+    emailRef.current?.focus();
   }, []);
 
   const handleSubmit = useCallback(async () => {
+    if (!email.trim()) {
+      setError('Enter email');
+      emailRef.current?.focus();
+      return;
+    }
     if (!password) {
       setError('Enter password');
+      passwordRef.current?.focus();
       return;
     }
 
     setLoading(true);
     setError('');
-
-    // Small delay to prevent timing attacks
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    if (authenticateAdmin(password)) {
-      setAdminAuthenticated(true);
+    try {
+      await loginAdmin({ email: email.trim(), password });
       closeWindow(windowId);
 
-      // Open Admin Portal
       const { openWindowWithParams } = useWindowStore.getState();
       const portalWindowId = `admin-portal-${Date.now()}`;
       openWindowWithParams(
@@ -58,20 +55,24 @@ export function AdminLogin({ windowId }: AdminLoginProps) {
           isMinimized: false,
           isMaximized: false,
         },
-        undefined
+        undefined,
       );
-    } else {
-      setError('Access denied.');
+    } catch (loginError) {
+      setError(getApiErrorMessage(loginError));
       setPassword('');
-      setLoading(false);
       passwordRef.current?.focus();
+    } finally {
+      setLoading(false);
     }
-  }, [password, windowId, closeWindow]);
+  }, [closeWindow, email, password, windowId]);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter') void handleSubmit();
+  }, [handleSubmit]);
 
   const handleCancel = useCallback(() => {
-    clearAdminAuth();
     closeWindow(windowId);
-  }, [windowId, closeWindow]);
+  }, [closeWindow, windowId]);
 
   return (
     <div className="admin-login" onKeyDown={handleKeyDown}>
@@ -90,44 +91,50 @@ export function AdminLogin({ windowId }: AdminLoginProps) {
         {error && <div className="admin-login-error">{error}</div>}
 
         <div className="admin-login-field">
+          <label htmlFor="admin-email">Email</label>
+          <input
+            ref={emailRef}
+            id="admin-email"
+            type="email"
+            value={email}
+            onChange={event => setEmail(event.target.value)}
+            disabled={loading}
+            placeholder="admin@example.com"
+            autoComplete="username"
+            autoCapitalize="off"
+            spellCheck={false}
+          />
+        </div>
+
+        <div className="admin-login-field">
           <label htmlFor="admin-password">Password</label>
           <input
             ref={passwordRef}
             id="admin-password"
             type="password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onChange={event => setPassword(event.target.value)}
             disabled={loading}
             placeholder="••••••••••••"
-            autoComplete="off"
-            autoCorrect="off"
+            autoComplete="current-password"
             autoCapitalize="off"
             spellCheck={false}
           />
         </div>
 
         <div className="admin-login-actions">
-          <button
-            className="admin-login-btn admin-login-btn-secondary"
-            onClick={handleCancel}
-            disabled={loading}
-          >
+          <button className="admin-login-btn admin-login-btn-secondary" onClick={handleCancel} disabled={loading}>
             Cancel
           </button>
-          <button
-            className="admin-login-btn admin-login-btn-primary"
-            onClick={handleSubmit}
-            disabled={loading || !password}
-          >
+          <button className="admin-login-btn admin-login-btn-primary" onClick={() => void handleSubmit()} disabled={loading || !email || !password}>
             {loading ? 'Authenticating...' : 'Authenticate'}
           </button>
         </div>
       </div>
 
       <div className="admin-login-footer">
-        <span>Development access only</span>
-        <span>Session-based authentication</span>
+        <span>Server authentication</span>
+        <span>HttpOnly session cookie</span>
       </div>
     </div>
   );

@@ -3,37 +3,38 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json && node scripts/copy-schema.mjs",
     "start": "node dist/server.js",
     "test": "vitest run",
     "db:init": "tsx src/db/init.ts",
-    "db:reset": "tsx src/db/reset.ts"
+    "admin:reset": "tsx src/scripts/admin-reset.ts"
   },
   "dependencies": {
-    "fastify": "^5.0.0",
-    "fastify-cors": "^6.1.0",
-    "fastify-cookie": "^5.7.0",
-    "fastify-helmet": "^7.1.0",
-    "fastify-rate-limit": "^5.9.0",
-    "fastify-static": "^4.7.0",
-    "better-sqlite3": "^9.6.0",
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/cors": "^11.3.0",
+    "@fastify/helmet": "^13.1.1",
+    "@fastify/multipart": "^10.1.2",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^10.1.5",
     "bcryptjs": "^2.4.3",
-    "zod": "^3.23.0",
-    "cookie": "^1.0.0",
-    "date-fns": "^4.1.0",
-    "uuid": "^11.0.0",
-    "dotenv": "^16.4.0"
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^16.4.0",
+    "fastify": "^5.12.5",
+    "file-type": "^22.1.1",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.12",
-    "@types/cookie": "^0.6.0",
     "@types/node": "^24.0.0",
-    "@types/uuid": "^10.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
+    "typescript": "^5.8.2",
     "vitest": "^2.1.0"
   }
 }

@@ -1,0 +1,191 @@
+/* ================= LIQUID GLASS SYSTEM CLOCK ================= */
+
+.liquid-glass-clock {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  user-select: none;
+}
+
+/* 1. Subtle Ambient Optical Diffusion Layer (Borderless, Organic) */
+.liquid-clock-glow-diffusion {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 145%;
+  height: 145%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(10, 14, 22, 0.35) 48%,
+    transparent 74%
+  );
+  filter: blur(28px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 2. Optical Wallpaper Refraction Lens Behind Digits (Soft Masked, No Rectangular Edge) */
+.liquid-clock-time-lens {
+  position: absolute;
+  top: -10%;
+  left: -12%;
+  width: 124%;
+  height: 105%;
+  border-radius: 40px;
+  backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
+  pointer-events: none;
+  z-index: 1;
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, #000 35%, transparent 100%);
+}
+
+/* 3. Primary Liquid-Glass Digits Container & Refraction Bevel Shadow */
+.liquid-clock-time-val {
+  position: relative;
+  z-index: 2;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro', system-ui, -apple-system, sans-serif;
+  font-size: clamp(68px, 8.8vw, 104px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+
+  /* Physical glass bevel refraction: crisp drop shadow creates physical glass thickness */
+  filter:
+    drop-shadow(1px 1.5px 0.5px rgba(0, 0, 0, 0.42))
+    drop-shadow(0 4px 14px rgba(0, 0, 0, 0.52))
+    drop-shadow(0 16px 36px rgba(0, 0, 0, 0.62));
+}
+
+/* 4. Translucent Digit Interior (Wallpaper Genuinely Visible Through Numbers) */
+.liquid-clock-time-digits {
+  position: relative;
+  display: inline-block;
+  z-index: 2;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.10) 25%,
+    rgba(255, 255, 255, 0.03) 60%,
+    rgba(255, 255, 255, 0.16) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 5. Glass Edge / Specular Upper-Left Perimeter Highlight */
+.liquid-clock-time-val::before {
+  content: attr(data-time);
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  font-variant-numeric: inherit;
+  pointer-events: none;
+  -webkit-text-stroke: 1.1px transparent;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.40) 28%,
+    rgba(255, 255, 255, 0.06) 55%,
+    rgba(255, 255, 255, 0.32) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 6. Inner Refraction Bevel Highlight */
+.liquid-clock-time-val::after {
+  content: attr(data-time);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  font-variant-numeric: inherit;
+  pointer-events: none;
+  transform: translateY(-0.8px);
+  -webkit-text-stroke: 0.8px rgba(255, 255, 255, 0.22);
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  opacity: 0.75;
+}
+
+/* 7. Secondary Subdued Date Display */
+.liquid-clock-date {
+  position: relative;
+  z-index: 2;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', system-ui, -apple-system, sans-serif;
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.70);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ================= DESKTOP SPECIFIC CLOCK PLACEMENT ================= */
+.desktop-glass-clock {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--panel-height, 42px) + clamp(36px, 16vh, 120px));
+  transform: translateX(-50%);
+  pointer-events: none !important;
+  z-index: 5;
+  animation: desktopClockFadeIn 0.4s ease-out;
+}
+
+.desktop-glass-clock.position-top {
+  top: calc(var(--panel-height, 42px) + clamp(36px, 16vh, 120px));
+}
+
+.desktop-glass-clock.position-bottom,
+.desktop-glass-clock.position-left,
+.desktop-glass-clock.position-right {
+  top: clamp(48px, 18vh, 130px);
+}
+
+.desktop-glass-clock * {
+  pointer-events: none !important;
+}
+
+@keyframes desktopClockFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-glass-clock,
+  .liquid-glass-clock {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -31,7 +31,6 @@ export function Icon({
       }}
       aria-hidden="true"
     >
-      {/* @ts-expect-error - LucideIcon accepts these props */}
       <IconComponent
         width={size}
         height={size}

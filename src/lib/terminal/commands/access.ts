@@ -11,6 +11,7 @@ export const accessCommand: Command = {
   name: 'access',
   description: '',
   usage: 'access <service>',
+  hidden: true,
   handler: async (args, _ctx) => {
     if (args.length === 0) {
       return formatError('access', 'missing service operand');

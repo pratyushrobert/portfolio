@@ -9,14 +9,12 @@ import {
   isSymlinkNode,
   updateNodeTimestamp,
 } from './nodes';
-import { saveToLocalStorage, loadFromLocalStorage } from './persistence';
+import { saveToLocalStorage } from './persistence';
 import { storeBinaryFile, getBinaryFile, deleteBinaryFile, generateStorageKey } from './binaryStorage';
 import type {
   VFSState,
   AnyVFSNode,
   VFSOperationResult,
-  FileNode,
-  DirectoryNode,
   VFSStatResult,
 } from '../../types/vfs';
 
@@ -28,11 +26,15 @@ export class VirtualFS {
 
   private constructor() {
     // Clear localStorage to force fresh state
-    localStorage.removeItem('mimios-vfs');
-    localStorage.removeItem('mimios-vfs-version');
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('mimios-vfs');
+      localStorage.removeItem('mimios-vfs-version');
+    }
     console.log('[VFS] Constructor called - creating initial state');
     this.state = this.createInitialState();
-    saveToLocalStorage(this.state);
+    if (typeof localStorage !== 'undefined') {
+      saveToLocalStorage(this.state);
+    }
     console.log('[VFS] Initial state created, cwd:', this.state.cwd, 'nodes:', Object.keys(this.state.nodes).length);
   }
 
@@ -50,7 +52,6 @@ export class VirtualFS {
 
     // Create standard directories
     const documents = createDirectoryNode('documents', user.id);
-    const projects = createDirectoryNode('projects', user.id);
     const images = createDirectoryNode('images', user.id);
     const videos = createDirectoryNode('videos', user.id);
     const skills = createDirectoryNode('skills', user.id);
@@ -59,6 +60,7 @@ export class VirtualFS {
 
     // Create .mimi directory
     const mimiDir = createDirectoryNode('.mimi', user.id);
+    const secretDir = createDirectoryNode('.secret', user.id);
 
     // Create built-in hero image
     const heroImage = createBuiltInBinaryFileNode(
@@ -88,7 +90,7 @@ export class VirtualFS {
     );
 
     // Add children to user
-    user.children = [documents.id, projects.id, images.id, videos.id, skills.id, experience.id, certificates.id, mimiDir.id];
+    user.children = [documents.id, images.id, videos.id, skills.id, experience.id, certificates.id, mimiDir.id, secretDir.id];
 
     // Add built-in images to images directory
     images.children = [heroImage.id, reactLogo.id, viteLogo.id];
@@ -136,82 +138,6 @@ Website:   https://pratyush.dev`
       'application/pdf',
       0, // size unknown for static asset
       '/portfolio/documents/resume.pdf'
-    );
-
-    // Create README.md for projects
-    const projectsReadme = createFileNode(
-      'README.md',
-      projects.id,
-      `# Projects
-
-This directory contains portfolio projects.
-
-Each project has its own subdirectory with relevant files.
-`
-    );
-
-    // Create project subdirectories
-    const secureVaultDir = createDirectoryNode('securevault', projects.id);
-    const nidsDir = createDirectoryNode('nids', projects.id);
-    const attendanceDir = createDirectoryNode('attendance-system', projects.id);
-
-    projects.children = [projectsReadme.id, secureVaultDir.id, nidsDir.id, attendanceDir.id];
-
-    // SecureVault project files
-    const secureVaultReadme = createFileNode(
-      'README.md',
-      secureVaultDir.id,
-      `# SecureVault
-
-A secure password manager with end-to-end encryption.
-
-**Tech Stack:** React, TypeScript, Node.js, PostgreSQL, WebCrypto API
-
-**Features:**
-- Zero-knowledge encryption
-- Cross-device sync
-- Browser extension
-- Mobile responsive
-
-*This is a placeholder project description. Actual project details to be added.`
-    );
-
-    // NIDS project files
-    const nidsReadme = createFileNode(
-      'README.md',
-      nidsDir.id,
-      `# Network Intrusion Detection System (NIDS)
-
-A lightweight network monitoring and intrusion detection system.
-
-**Tech Stack:** Go, eBPF, Prometheus, Grafana
-
-**Features:**
-- Real-time packet analysis
-- Anomaly detection
-- Alerting system
-- Dashboard visualization
-
-*This is a placeholder project description. Actual project details to be added.`
-    );
-
-    // Attendance System project files
-    const attendanceReadme = createFileNode(
-      'README.md',
-      attendanceDir.id,
-      `# Attendance System
-
-An automated attendance tracking system with facial recognition.
-
-**Tech Stack:** Python, OpenCV, FastAPI, PostgreSQL
-
-**Features:**
-- Face recognition check-in
-- Real-time dashboard
-- Export reports
-- Multi-camera support
-
-*This is a placeholder project description. Actual project details to be added.`
     );
 
     // Skills file
@@ -308,34 +234,44 @@ User: pratyush`
     // Add mimi info to .mimi dir
     mimiDir.children = [mimiInfo.id];
 
+    // Create secret CTF challenge files in .secret dir
+    const flagCipher = createFileNode(
+      'cipher.txt',
+      secretDir.id,
+      `TWltaU9TcntjNHRfcDB3M3JmMWxfZzR0M3dheX0=`
+    );
+    const flagNote = createFileNode(
+      'note.txt',
+      secretDir.id,
+      `Mimi's Secret Vault
+To decode the cipher, use the 'base64 decode <text>' command in the terminal!
+Once discovered, submit your flag with: 'challenge submit <flag>'`
+    );
+    secretDir.children = [flagCipher.id, flagNote.id];
+
     return {
       nodes: {
         [root.id]: root,
         [home.id]: home,
         [user.id]: user,
         [documents.id]: documents,
-        [projects.id]: projects,
         [images.id]: images,
         [videos.id]: videos,
         [skills.id]: skills,
         [experience.id]: experience,
         [certificates.id]: certificates,
         [mimiDir.id]: mimiDir,
+        [secretDir.id]: secretDir,
         [etc.id]: etc,
         [about.id]: about,
         [contact.id]: contact,
         [resume.id]: resume,
         [mimiInfo.id]: mimiInfo,
         [motd.id]: motd,
-        [projectsReadme.id]: projectsReadme,
-        [secureVaultDir.id]: secureVaultDir,
-        [nidsDir.id]: nidsDir,
-        [attendanceDir.id]: attendanceDir,
-        [secureVaultReadme.id]: secureVaultReadme,
-        [nidsReadme.id]: nidsReadme,
-        [attendanceReadme.id]: attendanceReadme,
         [skillsFile.id]: skillsFile,
         [experienceFile.id]: experienceFile,
+        [flagCipher.id]: flagCipher,
+        [flagNote.id]: flagNote,
       },
       rootId: root.id,
       cwd: '/home/pratyush',
@@ -372,15 +308,6 @@ User: pratyush`
     }
 
     return this.getNode(currentId);
-  }
-
-  private getParentId(path: string): string | undefined {
-    if (path === '/') return undefined;
-    const parts = path.split('/').filter(Boolean);
-    if (parts.length === 1) return this.state.rootId;
-
-    const parentPath = '/' + parts.slice(0, -1).join('/');
-    return this.getNodeByPath(parentPath)?.id;
   }
 
   private resolvePathInternal(path: string): string {
@@ -542,7 +469,7 @@ User: pratyush`
     file: File,
     targetPath: string,
     onConflict: 'replace' | 'rename' | 'cancel' = 'cancel'
-  ): Promise<VFSOperationResult> {
+  ): Promise<VFSOperationResult<{ path: string; storageKey: string }>> {
     const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
     if (file.size > MAX_SIZE) {
       return { success: false, error: `File exceeds maximum size of 50 MB` };
@@ -680,7 +607,7 @@ User: pratyush`
     delete this.state.nodes[id];
   }
 
-  cp(sourcePath: string, destPath: string): VFSOperationResult {
+  async cp(sourcePath: string, destPath: string): Promise<VFSOperationResult> {
     const srcResolved = this.resolvePath(sourcePath);
     const destResolved = this.resolvePath(destPath);
 
@@ -695,7 +622,7 @@ User: pratyush`
 
     const destName = destResolved.split('/').filter(Boolean).pop()!;
 
-    const copied = this.copyNode(source, destParent.id, destName);
+    const copied = await this.copyNode(source, destParent.id, destName);
     destParent.children.push(copied.id);
     this.state.nodes[destParent.id] = updateNodeTimestamp(destParent);
     this.notify();
@@ -745,7 +672,7 @@ User: pratyush`
     if (!source) return { success: false, error: 'Source not found' };
 
     const srcParts = srcResolved.split('/').filter(Boolean);
-    const srcName = srcParts.pop()!;
+    srcParts.pop();
     const srcParentPath = '/' + srcParts.join('/');
     const srcParent = this.getNodeByPath(srcParentPath);
     if (!srcParent || !isDirectoryNode(srcParent)) {

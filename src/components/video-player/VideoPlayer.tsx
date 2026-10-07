@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { vfs } from '../../lib/vfs';
-import { isFileNode } from '../../lib/vfs/nodes';
 import {
   Play,
   Pause,
@@ -14,10 +13,12 @@ import {
 import { useWindowStore } from '../../stores/useWindowStore';
 import './VideoPlayer.css';
 
+import type { DesktopOpenRequest } from '../../types/desktop';
+
 interface VideoPlayerProps {
   windowId: string;
   filePath?: string;
-  onOpenRequest?: (request: any) => void;
+  onOpenRequest?: (request: DesktopOpenRequest) => void;
 }
 
 export function VideoPlayer({ windowId, filePath: propFilePath }: VideoPlayerProps) {
@@ -34,6 +35,7 @@ export function VideoPlayer({ windowId, filePath: propFilePath }: VideoPlayerPro
   const [fileName, setFileName] = useState<string>('');
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -158,7 +160,8 @@ export function VideoPlayer({ windowId, filePath: propFilePath }: VideoPlayerPro
     const video = videoRef.current;
     if (!video) return;
     const time = parseFloat(e.target.value);
-    if (isFinite(time) && time >= 0 && time <= durationRef.current) {
+    const maxDuration = durationRef.current > 0 ? durationRef.current : (isFinite(video.duration) ? video.duration : 0);
+    if (isFinite(time) && time >= 0 && (maxDuration <= 0 || time <= maxDuration)) {
       video.currentTime = time;
       setCurrentTime(time);
     }
@@ -265,7 +268,7 @@ export function VideoPlayer({ windowId, filePath: propFilePath }: VideoPlayerPro
             <video
               ref={videoRef}
               src={videoSrc}
-              onLoad={handleVideoLoad}
+              onLoadedMetadata={handleVideoLoad}
               onDurationChange={handleDurationChange}
               onError={handleVideoError}
               onTimeUpdate={handleTimeUpdate}
@@ -283,7 +286,7 @@ export function VideoPlayer({ windowId, filePath: propFilePath }: VideoPlayerPro
           <input
             type="range"
             min="0"
-            max={durationRef.current > 0 && isFinite(durationRef.current) ? durationRef.current : 100}
+            max={duration > 0 && isFinite(duration) ? duration : 100}
             value={isFinite(currentTime) && currentTime >= 0 ? currentTime : 0}
             onChange={handleSeek}
             className="seek-bar"
@@ -292,7 +295,7 @@ export function VideoPlayer({ windowId, filePath: propFilePath }: VideoPlayerPro
           <div className="time-display">
             <span>{formatTime(isFinite(currentTime) && currentTime >= 0 ? currentTime : 0)}</span>
             <span>/</span>
-            <span>{formatTime(isFinite(durationRef.current) && durationRef.current > 0 ? durationRef.current : 0)}</span>
+            <span>{formatTime(isFinite(duration) && duration > 0 ? duration : 0)}</span>
           </div>
         </div>
 
@@ -336,10 +339,3 @@ export function VideoPlayer({ windowId, filePath: propFilePath }: VideoPlayerPro
     </div>
   );
 }
-
-const formatTime = (time: number) => {
-  if (isNaN(time) || !isFinite(time) || time <= 0) return '0:00';
-  const mins = Math.floor(time / 60);
-  const secs = Math.floor(time % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};

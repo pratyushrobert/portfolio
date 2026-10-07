@@ -165,7 +165,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--content-bg, #1a1a2e);
+  background: var(--content-bg, #0d1117);
   position: relative;
   min-height: 0;
 }

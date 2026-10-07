@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" fill="none">
+  <!-- Subtle circular background -->
+  <circle cx="60" cy="60" r="56" fill="#181a20" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.12"/>
+  <circle cx="60" cy="60" r="50" fill="#20222a" fill-opacity="0.6"/>
+  <!-- User Head -->
+  <circle cx="60" cy="46" r="18" fill="#e5e7eb" fill-opacity="0.85"/>
+  <!-- User Body / Torso -->
+  <path d="M 32 94 C 32 76 44 70 60 70 C 76 70 88 76 88 94 Z" fill="#e5e7eb" fill-opacity="0.85"/>
+</svg>

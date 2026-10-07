@@ -13,7 +13,7 @@ export const cpCommand: Command = {
 
     const src = resolvePath(args[0]);
     const dest = resolvePath(args[1]);
-    const result = vfs.cp(src, dest);
+    const result = await vfs.cp(src, dest);
     if (!result.success) {
       return formatError('cp', result.error || 'operation failed');
     }

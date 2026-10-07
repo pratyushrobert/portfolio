@@ -1,0 +1,1577 @@
+/* MimiOS Boot & Login Experience Styles (Revision 2 — Liquid Glass & Personality Pass) */
+
+:root {
+  --boot-background: #000000;
+}
+
+/* ================= 1. STAGE 1: POWER-OFF SCREEN ================= */
+.poweroff-screen {
+  position: fixed;
+  inset: 0;
+  background-color: var(--boot-background, #000000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  user-select: none;
+  overflow: hidden;
+}
+
+.power-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  border-radius: 50%;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.power-button:focus-visible {
+  outline: 2px solid #e2e8f0;
+  outline-offset: 8px;
+}
+
+.power-button:active {
+  transform: scale(0.94);
+}
+
+.power-button-bezel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #2a2c35 0%, #15161b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.95),
+    inset 0 1px 2px rgba(255, 255, 255, 0.25),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.power-button:hover .power-button-bezel {
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 14px 38px rgba(0, 0, 0, 0.98),
+    0 0 20px rgba(255, 255, 255, 0.08),
+    inset 0 1px 2px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.power-button-face {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #17181f 0%, #0d0e12 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.power-button-icon {
+  color: #717684;
+  transition: color 0.22s, filter 0.22s;
+}
+
+.power-button:hover .power-button-icon {
+  color: #f1f5f9;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+}
+
+.power-button-led {
+  position: absolute;
+  bottom: 12px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #3b3f4d;
+  transition: background-color 0.22s, box-shadow 0.22s;
+}
+
+.power-button:hover .power-button-led {
+  background-color: #e2e8f0;
+  box-shadow: 0 0 6px #ffffff;
+}
+
+/* ================= 2. STAGE 2: MCORP FIRMWARE SPLASH ================= */
+.mcorp-splash {
+  position: fixed;
+  inset: 0;
+  background-color: var(--boot-background, #000000);
+  color: #94a3b8;
+  font-family: var(--mono, ui-monospace, Consolas, monospace);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px 40px;
+  z-index: 100000;
+  user-select: none;
+}
+
+@keyframes mcorpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mcorp-firmware-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mcorp-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+
+.mcorp-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mcorp-logo-image {
+  max-width: 420px;
+  width: 100%;
+  height: auto;
+}
+
+.mcorp-fallback-logo {
+  text-align: center;
+}
+
+.mcorp-fallback-title {
+  display: block;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  color: #ffffff;
+}
+
+.mcorp-fallback-subtitle {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 5px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.mcorp-firmware-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #ffffff;
+  animation: mcorpSpin 0.8s linear infinite;
+}
+
+@keyframes mcorpSpin {
+  to { transform: rotate(360deg); }
+}
+
+.mcorp-prompt-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.mcorp-prompt-bar strong {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ================= 3. STAGE 3: SYSTEM BOOT SEQUENCE (NATURAL LOG SCROLL) ================= */
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  background-color: var(--boot-background, #000000);
+  color: #cbd5e1;
+  font-family: var(--mono, ui-monospace, Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.55;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 28px 36px;
+  user-select: none;
+  overflow: hidden;
+}
+
+.boot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 14px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.boot-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.boot-mono-indicator {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: #94a3b8;
+}
+
+.boot-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #f8fafc;
+}
+
+.boot-subtitle {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.boot-skip-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.boot-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.boot-skip-btn span {
+  opacity: 0.5;
+}
+
+/* Active terminal scroll area */
+.boot-log-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 0;
+  scroll-behavior: smooth;
+}
+
+.boot-log-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.boot-log-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.boot-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(3px);
+  animation: bootLineSlide 0.15s cubic-bezier(0, 0, 0.2, 1) forwards;
+  flex-shrink: 0;
+}
+
+@keyframes bootLineSlide {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.boot-tag {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.boot-tag.ok {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.boot-tag.info {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.boot-tag.error {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+.boot-msg {
+  color: #e2e8f0;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.boot-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: #cbd5e1;
+  margin-left: 8px;
+  vertical-align: middle;
+  animation: bootBlink 0.8s infinite;
+}
+
+@keyframes bootBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.boot-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.boot-status-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.boot-progress-track {
+  width: 240px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.boot-progress-bar {
+  height: 100%;
+  background: #e2e8f0;
+  border-radius: 2px;
+  transition: width 0.16s ease-out;
+}
+
+/* ================= 4. STAGE 4: MimiOS SPLASH (RUNNING CAT TRACK) ================= */
+.mimios-splash {
+  position: fixed;
+  inset: 0;
+  background-color: var(--boot-background, #000000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  user-select: none;
+  overflow: hidden;
+}
+
+.mimios-splash-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  width: 320px;
+  animation: mimiSplashCardFade 0.25s ease-out;
+}
+
+@keyframes mimiSplashCardFade {
+  from { opacity: 0; transform: scale(0.99); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.mimios-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+}
+
+.mimios-splash-logo {
+  width: 110px;
+  height: 110px;
+}
+
+.mimios-splash-fallback {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+}
+
+.mimios-splash-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mimios-splash-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.mimios-splash-subtitle {
+  margin: 0;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Personality Moment: Running Cat Track */
+.mimios-cat-track-container {
+  position: relative;
+  width: 260px;
+  height: 38px;
+  margin-top: 10px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.mimios-cat-track-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.22) 50%, rgba(255, 255, 255, 0.06) 100%);
+  border-radius: 1px;
+}
+
+.mimios-cat-runner {
+  position: absolute;
+  bottom: 1px;
+  left: 0;
+  width: 36px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: mimiosCatTrackRun 1.5s ease-in-out infinite, mimiosCatBob 0.28s ease-in-out infinite alternate;
+  transform-origin: center bottom;
+}
+
+@keyframes mimiosCatTrackRun {
+  0% {
+    left: -10px;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: 236px;
+    opacity: 0;
+  }
+}
+
+@keyframes mimiosCatBob {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-3px);
+  }
+}
+
+.mimios-boot-cat-img {
+  width: 36px;
+  height: 22px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+/* ================= 5. STAGE 5: TRUE LIQUID GLASS LOGIN ================= */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background-color: #06070a;
+  color: var(--text-h, #ffffff);
+  font-family: var(--sans, system-ui, -apple-system, sans-serif);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: max(24px, env(safe-area-inset-top, 24px)) max(32px, env(safe-area-inset-right, 32px)) max(24px, env(safe-area-inset-bottom, 24px)) max(32px, env(safe-area-inset-left, 32px));
+  user-select: none;
+  overflow: hidden;
+  animation: loginFadeIn 0.35s ease-out;
+}
+
+@keyframes loginFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Exit Transition when User Submits Name */
+.login-screen.is-submitting .login-stage,
+.login-screen.is-submitting .login-header,
+.login-screen.is-submitting .login-footer {
+  opacity: 0;
+  transform: scale(0.985);
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+  pointer-events: none;
+}
+
+/* Layer 1: Authoritative Desktop Wallpaper (Crisp & Recognizable) */
+.login-wallpaper {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: none;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.login-wallpaper.has-fallback {
+  background: radial-gradient(ellipse at 50% 30%, #12141a 0%, #0a0c10 65%, #050608 100%);
+}
+
+/* Layer 2: Dark Dim Overlay for UI Legibility Without Blurring */
+.login-dim-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(6, 8, 12, 0.38);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Layer 3: Subtle Vignette Framing */
+.login-vignette-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 20%, rgba(4, 5, 8, 0.55) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Header: Top-Right Liquid-Glass System Status Bar */
+.login-header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.login-status-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(14, 16, 22, 0.48) 50%,
+    rgba(8, 10, 16, 0.6) 100%
+  );
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.login-status-group:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.28);
+}
+
+.login-status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: color 0.18s ease;
+  user-select: none;
+}
+
+.login-status-item:hover {
+  color: #ffffff;
+}
+
+.login-status-divider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.login-status-icon {
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  transition: opacity 0.2s ease;
+}
+
+.login-status-icon.is-offline {
+  opacity: 0.38;
+}
+
+.login-status-battery-text {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', var(--mono, monospace);
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1;
+}
+
+/* Center Stage: Large Clock + Liquid-Glass Identity Card */
+.login-stage {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 10px 0;
+}
+
+/* ================= 5.1 LARGE LIQUID-GLASS TIME DISPLAY ================= */
+
+/* Floating Clock Container (Positioned High with Comfortable Gap to Card) */
+.login-glass-clock-container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  user-select: none;
+  /* Lifts clock upward into the upper third of the screen */
+  margin-top: clamp(-20px, -3.2vh, -42px);
+  /* Generous responsive vertical separation (~40–80px) above login card */
+  margin-bottom: clamp(44px, 7.2vh, 80px);
+  animation: loginClockResolve 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.48s backwards;
+}
+
+@keyframes loginClockResolve {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* 1. Subtle Ambient Optical Diffusion Layer (Borderless, Organic) */
+.login-clock-glow-diffusion {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 145%;
+  height: 145%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(10, 14, 22, 0.35) 48%,
+    transparent 74%
+  );
+  filter: blur(28px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 2. Optical Wallpaper Refraction Lens Behind Digits (Soft Masked, No Rectangular Edge) */
+.login-clock-time-lens {
+  position: absolute;
+  top: -10%;
+  left: -12%;
+  width: 124%;
+  height: 105%;
+  border-radius: 40px;
+  /* Softens, saturates, and brightens wallpaper seen directly through the glass */
+  backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
+  pointer-events: none;
+  z-index: 1;
+  /* Soft elliptical fade ensures zero visible rectangular border */
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, #000 35%, transparent 100%);
+}
+
+/* 3. Primary Liquid-Glass Digits Container & Refraction Bevel Shadow */
+.login-clock-time-val {
+  position: relative;
+  z-index: 2;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro', system-ui, -apple-system, sans-serif;
+  font-size: clamp(68px, 8.8vw, 104px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+
+  /* Physical glass bevel refraction on bottom-right contour:
+     Crisp 1px drop shadow forms physical glass thickness over wallpaper */
+  filter:
+    drop-shadow(1px 1.5px 0.5px rgba(0, 0, 0, 0.42))
+    drop-shadow(0 4px 14px rgba(0, 0, 0, 0.52))
+    drop-shadow(0 16px 36px rgba(0, 0, 0, 0.62));
+}
+
+/* 4. Translucent Digit Interior (Wallpaper Genuinely Visible Through Numbers) */
+.login-clock-time-digits {
+  position: relative;
+  display: inline-block;
+  z-index: 2;
+
+  /* Translucent Liquid Glass Fill:
+     Interior drops down to 3% - 10% alpha so wallpaper artwork, linework,
+     and panels are visibly recognizable through the digits */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.10) 25%,
+    rgba(255, 255, 255, 0.03) 60%,
+    rgba(255, 255, 255, 0.16) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 5. Glass Edge / Specular Upper-Left Perimeter Highlight */
+.login-clock-time-val::before {
+  content: attr(data-time);
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  font-variant-numeric: inherit;
+  pointer-events: none;
+
+  /* Specular glass bevel rim:
+     Illuminates top-left curve with light from 135deg,
+     fading to transparent on bottom-right to harmonize with dark bevel shadow */
+  -webkit-text-stroke: 1.1px transparent;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.40) 28%,
+    rgba(255, 255, 255, 0.06) 55%,
+    rgba(255, 255, 255, 0.32) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 6. Inner Refraction Bevel Highlight */
+.login-clock-time-val::after {
+  content: attr(data-time);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  font-variant-numeric: inherit;
+  pointer-events: none;
+
+  /* Shifted inner reflection simulating physical glass thickness */
+  transform: translateY(-0.8px);
+  -webkit-text-stroke: 0.8px rgba(255, 255, 255, 0.22);
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  opacity: 0.75;
+}
+
+/* 7. Secondary Subdued Date Display */
+.login-clock-date {
+  position: relative;
+  z-index: 2;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', system-ui, -apple-system, sans-serif;
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.70);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Translucent Apple Liquid Glass Identity Card */
+.login-glass-card {
+  position: relative;
+  z-index: 10;
+  max-width: 340px;
+  width: 100%;
+  padding: 28px 24px 22px;
+  border-radius: 24px;
+  clip-path: inset(0px 0px 0px 0px round 24px);
+  /* Translucent dual-tone liquid glass surface */
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(14, 17, 24, 0.3) 70%,
+    rgba(8, 10, 15, 0.45) 100%
+  );
+  /* Physical refraction & diffusion */
+  backdrop-filter: blur(24px) saturate(160%) brightness(106%) contrast(104%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(106%) contrast(104%);
+  /* Multi-layer edge boundary */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  /* 4-way specular rim bevel and multi-level ambient shadows */
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.45),
+    inset 1px 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1.5px 1.5px 0 rgba(0, 0, 0, 0.35),
+    inset -1px 0 1px 0 rgba(0, 0, 0, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 20px 48px -6px rgba(0, 0, 0, 0.55),
+    0 36px 72px -12px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* 1. Expansion Phase: Glass Material Expands Directly from Avatar into Rounded Rectangle */
+.login-glass-card.expanding {
+  animation: liquidGlassExpand 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: clip-path;
+}
+
+.login-glass-card.settled {
+  clip-path: inset(0px 0px 0px 0px round 24px);
+}
+
+@keyframes liquidGlassExpand {
+  0% {
+    /* Rounded rectangular seed centered directly on the avatar */
+    clip-path: inset(56px calc(50% - 44px) calc(100% - 132px) calc(50% - 44px) round 24px);
+    box-shadow:
+      inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.28),
+      0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+  76% {
+    /* Reaches final card dimensions as rounded rectangle */
+    clip-path: inset(0px 0px 0px 0px round 24px);
+    box-shadow:
+      inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.52),
+      inset 1px 0 1px 0 rgba(255, 255, 255, 0.25),
+      inset 0 -1.5px 1.5px 0 rgba(0, 0, 0, 0.35),
+      inset -1px 0 1px 0 rgba(0, 0, 0, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.25),
+      0 20px 48px -6px rgba(0, 0, 0, 0.55),
+      0 36px 72px -12px rgba(0, 0, 0, 0.65);
+  }
+  100% {
+    /* Soft material settling */
+    clip-path: inset(0px 0px 0px 0px round 24px);
+    box-shadow:
+      inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.45),
+      inset 1px 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1.5px 1.5px 0 rgba(0, 0, 0, 0.35),
+      inset -1px 0 1px 0 rgba(0, 0, 0, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.25),
+      0 20px 48px -6px rgba(0, 0, 0, 0.55),
+      0 36px 72px -12px rgba(0, 0, 0, 0.65);
+  }
+}
+
+/* 2. Staggered Content Reveal as Glass Unfurls */
+.login-glass-card.expanding .login-stagger-1 {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: loginItemReveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.54s forwards;
+}
+
+.login-glass-card.expanding .login-stagger-2 {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: loginItemReveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.60s forwards;
+}
+
+.login-glass-card.expanding .login-stagger-3 {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: loginItemReveal 0.30s cubic-bezier(0.16, 1, 0.3, 1) 0.68s forwards;
+}
+
+.login-glass-card.expanding .login-stagger-4 {
+  opacity: 0;
+  transform: translateY(4px);
+  animation: loginItemReveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.76s forwards;
+}
+
+@keyframes loginItemReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-glass-card.settled .login-stagger-1,
+.login-glass-card.settled .login-stagger-2,
+.login-glass-card.settled .login-stagger-3,
+.login-glass-card.settled .login-stagger-4 {
+  opacity: 1;
+  transform: none;
+}
+
+/* Specular Edge Reflection & Perimeter Highlight */
+.login-glass-edge-reflection {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.18) 28%,
+    transparent 55%,
+    rgba(255, 255, 255, 0.05) 75%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Internal Caustics and Liquid Light Diffusion */
+.login-glass-internal-light {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at 20% 12%,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.03) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.login-branding {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  opacity: 0.92;
+}
+
+.login-brand-logo {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+}
+
+.login-brand-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.login-avatar-container {
+  position: relative;
+  z-index: 5;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.3),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.login-avatar-initial {
+  font-size: 25px;
+  font-weight: 700;
+  color: #f8fafc;
+  font-family: var(--sans, sans-serif);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.login-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-prompt-header {
+  position: relative;
+  z-index: 3;
+  margin-bottom: 16px;
+}
+
+.login-prompt-title {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.015em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.login-prompt-subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 400;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.login-form {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-input-wrapper {
+  width: 100%;
+}
+
+/* Glass Material Input Field */
+.login-name-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.03) 60%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+  backdrop-filter: blur(12px) brightness(105%);
+  -webkit-backdrop-filter: blur(12px) brightness(105%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-family: inherit;
+  text-align: center;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  box-sizing: border-box;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.18);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.login-name-input:hover {
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(255, 255, 255, 0.05) 60%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.login-name-input:focus {
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.07) 60%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.42);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.login-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* Glass-Integrated Tactile Continue Button */
+.login-continue-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #0c0d12;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.2, 0, 0, 1);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.login-continue-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px #ffffff;
+}
+
+.login-continue-btn:active {
+  transform: translateY(0.5px) scale(0.99);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.login-card-footer {
+  position: relative;
+  z-index: 3;
+  margin-top: 14px;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.38);
+  font-family: var(--mono, monospace);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Footer: Anchored Centered Hint + Bottom-Right Liquid-Glass Power Button */
+.login-footer {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 38px;
+}
+
+.login-bottom-hint {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-bottom-hint-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: rgba(14, 16, 22, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.login-bottom-hint-pill strong {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Bottom-Right Floating Liquid-Glass Shut Down Button */
+.login-power-btn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(14, 16, 22, 0.48) 50%,
+    rgba(8, 10, 16, 0.6) 100%
+  );
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.login-power-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(22, 26, 36, 0.55) 50%,
+    rgba(12, 14, 22, 0.7) 100%
+  );
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.login-power-btn:active {
+  transform: translateY(0.5px) scale(0.98);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive adjustments for mobile and compact viewports */
+@media (max-width: 640px) {
+  .login-screen {
+    padding: max(16px, env(safe-area-inset-top, 16px)) max(18px, env(safe-area-inset-right, 18px)) max(16px, env(safe-area-inset-bottom, 16px)) max(18px, env(safe-area-inset-left, 18px));
+  }
+
+  .login-status-group {
+    padding: 5px 10px;
+    gap: 8px;
+  }
+
+  .login-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .login-bottom-hint {
+    align-self: center;
+  }
+
+  .login-power-btn {
+    position: static;
+  }
+}
+
+/* ================= 5.3 STAGE 5.3: MIMIOS USER WELCOME TRANSITION ================= */
+.mimios-welcome-screen {
+  position: fixed;
+  inset: 0;
+  background-color: #06070a;
+  color: var(--text-h, #ffffff);
+  font-family: var(--font-ui, var(--sans));
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  overflow: hidden;
+  animation: welcomeFadeIn 0.22s ease-out;
+  transition: opacity 0.2s ease-out, filter 0.2s ease-out;
+}
+
+.mimios-welcome-screen.is-exiting {
+  opacity: 0;
+  filter: brightness(1.08) blur(2px);
+  pointer-events: none;
+}
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Centered Content Container Floating Over Wallpaper */
+.welcome-center-stage {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 28px;
+  max-width: 440px;
+}
+
+/* Subtle Ambient Diffusion Behind Center Stage (Borderless) */
+.welcome-glow-lens {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 340px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(14, 18, 26, 0.45) 50%,
+    transparent 75%
+  );
+  filter: blur(28px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 1. Circular Loading Indicator: Clean, Minimal, Smooth, Neutral Glass */
+.welcome-spinner-container {
+  position: relative;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: welcomeSpinnerAppear 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.03s backwards;
+}
+
+@keyframes welcomeSpinnerAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.welcome-spinner-svg {
+  width: 34px;
+  height: 34px;
+  animation: welcomeSpinnerRotate 0.85s linear infinite;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+}
+
+@keyframes welcomeSpinnerRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.welcome-spinner-track {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.welcome-spinner-arc {
+  stroke: rgba(255, 255, 255, 0.88);
+  stroke-dasharray: 60;
+  stroke-dashoffset: 42;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+}
+
+/* 2. Welcome Title: Clean and Confident Heading */
+.welcome-greeting-title {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font-family: var(--font-ui, var(--sans));
+  font-size: clamp(24px, 3.6vw, 30px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: #ffffff;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.6),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+  animation: welcomeTitleAppear 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.13s backwards;
+}
+
+@keyframes welcomeTitleAppear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-user-name {
+  color: #ffffff;
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+/* 3. Short Tip / Quote: Small, Subtle Muted Gray (<= 6 words) */
+.welcome-tip-quote {
+  position: relative;
+  z-index: 2;
+  margin: 10px 0 0;
+  font-family: var(--font-ui, var(--sans));
+  font-size: clamp(12.5px, 1.8vw, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  color: rgba(255, 255, 255, 0.54);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  animation: welcomeQuoteAppear 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.28s backwards;
+}
+
+@keyframes welcomeQuoteAppear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ================= 5.5 RECOVERY / ERROR ENVIRONMENT ================= */
+.boot-error-screen {
+  position: fixed;
+  inset: 0;
+  background-color: var(--boot-background, #000000);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 36px 40px;
+  z-index: 100000;
+  user-select: none;
+}
+
+/* ================= 6. REDUCED MOTION OVERRIDES ================= */
+@media (prefers-reduced-motion: reduce) {
+  .poweroff-screen,
+  .mcorp-splash,
+  .boot-screen,
+  .mimios-splash,
+  .login-screen,
+  .boot-line,
+  .boot-cursor,
+  .boot-progress-bar,
+  .mimios-cat-runner,
+  .login-wallpaper,
+  .login-glass-clock-container,
+  .login-glass-card,
+  .login-glass-card.expanding,
+  .login-stagger-1,
+  .login-stagger-2,
+  .login-stagger-3,
+  .login-stagger-4,
+  .login-continue-btn,
+  .login-status-group,
+  .login-power-btn,
+  .mimios-welcome-screen,
+  .welcome-spinner-container,
+  .welcome-spinner-svg,
+  .welcome-greeting-title,
+  .welcome-tip-quote {
+    animation: none !important;
+    transition: none !important;
+    clip-path: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

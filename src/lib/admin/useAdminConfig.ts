@@ -1,38 +1,11 @@
 /**
- * MimiOS Admin Config Hook
- * Provides reactive access to admin configuration with save/load
+ * MimiOS Admin VFS Utilities
+ * Provides reactive access to built-in assets and VFS content
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { loadAdminConfig, saveAdminConfig, resetAdminConfig } from './configStorage';
-import type { AdminConfig } from './types';
 import { vfs } from '../../lib/vfs';
 import { isFileNode } from '../../lib/vfs/nodes';
-
-export function useAdminConfig() {
-  const [config, setConfig] = useState<AdminConfig>(() => loadAdminConfig());
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setConfig(loadAdminConfig());
-    setLoading(false);
-  }, []);
-
-  const updateConfig = useCallback((updater: (prev: AdminConfig) => AdminConfig) => {
-    setConfig(prev => {
-      const next = updater(prev);
-      saveAdminConfig(next);
-      return next;
-    });
-  }, []);
-
-  const reset = useCallback(() => {
-    const defaults = resetAdminConfig();
-    setConfig(defaults);
-  }, []);
-
-  return { config, loading, updateConfig, reset };
-}
 
 /**
  * Hook to access VFS built-in assets for admin display
@@ -107,16 +80,15 @@ export function useVfsFileContent(path: string) {
   const save = useCallback(async (newContent: string) => {
     setLoading(true);
     setError(null);
-    const node = vfs.getNodeByPath(path);
-    if (!node) {
+    const statResult = vfs.stat(path);
+    if (!statResult.success || !statResult.data) {
       setError('File not found');
       setLoading(false);
       return false;
     }
 
-    // Use type assertion since we know it's a FileNode if it has mimeType
-    const fileNode = node as any;
-    const result = vfs.writeFile(path, newContent, fileNode.mimeType);
+    const mimeType = statResult.data.mimeType || 'text/plain';
+    const result = vfs.writeFile(path, newContent, mimeType);
     if (result.success) {
       setContent(newContent);
       setLoading(false);

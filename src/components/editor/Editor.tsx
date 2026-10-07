@@ -1,16 +1,17 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { vfs } from '../../lib/vfs';
-import { Save, Check, AlertCircle, FileText, Loader2 } from 'lucide-react';
+import { Save, AlertCircle, FileText, Loader2, Copy, Check } from 'lucide-react';
 import { useWindowStore } from '../../stores/useWindowStore';
+import type { DesktopOpenRequest } from '../../types/desktop';
 import './Editor.css';
 
 interface EditorProps {
   windowId: string;
   filePath?: string;
-  onOpenRequest?: (request: any) => void;
+  onOpenRequest?: (request: DesktopOpenRequest) => void;
 }
 
-export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: EditorProps) {
+export function Editor({ windowId, filePath: propFilePath }: EditorProps) {
   const { getWindow } = useWindowStore();
   const window = getWindow(windowId);
   const windowFilePath = window?.appParams?.path as string | undefined;
@@ -25,6 +26,7 @@ export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: Edit
   const [fileName, setFileName] = useState<string>('');
   const [isDirty, setIsDirty] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -139,6 +141,16 @@ export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: Edit
     });
   }, []);
 
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard fallback
+    }
+  }, [content]);
+
   const stats = {
     lines: content.split('\n').length,
     characters: content.length,
@@ -178,6 +190,23 @@ export function Editor({ windowId, filePath: propFilePath, onOpenRequest }: Edit
           </div>
         </div>
         <div className="editor-actions">
+          <button
+            className="editor-btn"
+            onClick={handleCopy}
+            title="Copy to clipboard"
+          >
+            {copied ? (
+              <>
+                <Check size={16} />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={16} />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
           <button
             className="editor-btn save-btn"
             onClick={handleSave}

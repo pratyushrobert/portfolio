@@ -151,7 +151,8 @@
 
 .admin-login-btn-primary {
   background: var(--accent);
-  color: var(--accent-text, white);
+  color: var(--accent-text, #0b0c10);
+  font-weight: 600;
 }
 
 .admin-login-btn-primary:hover:not(:disabled) {

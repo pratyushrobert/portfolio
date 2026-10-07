@@ -1,113 +1,131 @@
-import { useState } from 'react';
-import { useAdminConfig, useVfsFileContent } from '../../lib/admin/useAdminConfig';
-import { Save, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { portfolioApi, type PortfolioContent } from '../../lib/api/portfolio';
+import { getApiErrorMessage } from '../../lib/api/client';
+import { vfs } from '../../lib/vfs';
+import { Save, Loader2, Check } from 'lucide-react';
 
 type TabId = 'about' | 'contact' | 'skills' | 'experience';
 
-interface TabConfig {
+interface TabDefinition {
   id: TabId;
   label: string;
-  content: ReturnType<typeof useVfsFileContent>;
-  configKey: string;
   filePath: string;
 }
 
+const TABS: TabDefinition[] = [
+  { id: 'about', label: 'About', filePath: '/home/pratyush/about.txt' },
+  { id: 'contact', label: 'Contact', filePath: '/home/pratyush/contact.txt' },
+  { id: 'skills', label: 'Skills Overview', filePath: '/home/pratyush/skills/skills.md' },
+  { id: 'experience', label: 'Experience Overview', filePath: '/home/pratyush/experience/experience.md' },
+];
+
 export function AdminPortfolioContent() {
-  const { config, updateConfig } = useAdminConfig();
   const [activeTab, setActiveTab] = useState<TabId>('about');
+  const [contentMap, setContentMap] = useState<Record<TabId, string>>({
+    about: '',
+    contact: '',
+    skills: '',
+    experience: '',
+  });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  const aboutContent = useVfsFileContent('/home/pratyush/about.txt');
-  const contactContent = useVfsFileContent('/home/pratyush/contact.txt');
-  const skillsContent = useVfsFileContent('/home/pratyush/skills/skills.md');
-  const experienceContent = useVfsFileContent('/home/pratyush/experience/experience.md');
+  // Load content from backend, falling back to VFS files if empty
+  useEffect(() => {
+    let active = true;
 
-  const tabs: TabConfig[] = [
-    { id: 'about', label: 'About', content: aboutContent, configKey: 'portfolio.aboutText', filePath: '/home/pratyush/about.txt' },
-    { id: 'contact', label: 'Contact', content: contactContent, configKey: 'portfolio.contact', filePath: '/home/pratyush/contact.txt' },
-    { id: 'skills', label: 'Skills', content: skillsContent, configKey: 'skills', filePath: '/home/pratyush/skills/skills.md' },
-    { id: 'experience', label: 'Experience', content: experienceContent, configKey: 'experience', filePath: '/home/pratyush/experience/experience.md' },
-  ];
+    async function loadData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const backendItems: PortfolioContent[] = await portfolioApi.listAdmin();
+        const nextMap: Record<TabId, string> = {
+          about: '',
+          contact: '',
+          skills: '',
+          experience: '',
+        };
 
-  const activeTabConfig = tabs.find(t => t.id === activeTab);
+        const backendKeys = new Map<string, string>();
+        for (const item of backendItems) {
+          backendKeys.set(item.key, item.content);
+        }
+
+        for (const tab of TABS) {
+          if (backendKeys.has(tab.id)) {
+            nextMap[tab.id] = backendKeys.get(tab.id)!;
+          } else {
+            // Seed from existing VFS file if backend row does not exist yet
+            const vfsResult = vfs.readFile(tab.filePath);
+            if (vfsResult.success && vfsResult.data) {
+              nextMap[tab.id] = vfsResult.data;
+            }
+          }
+        }
+
+        if (active) {
+          setContentMap(nextMap);
+        }
+      } catch (err) {
+        if (active) {
+          setError(getApiErrorMessage(err));
+          // Fall back to VFS files on error
+          const fallbackMap: Record<TabId, string> = { ...contentMap };
+          for (const tab of TABS) {
+            const vfsResult = vfs.readFile(tab.filePath);
+            if (vfsResult.success && vfsResult.data) {
+              fallbackMap[tab.id] = vfsResult.data;
+            }
+          }
+          setContentMap(fallbackMap);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadData();
+    return () => { active = false; };
+  }, []);
 
   const handleSave = async (tabId: TabId) => {
-    if (!activeTabConfig) return;
-
+    const textToSave = contentMap[tabId];
     setSaving(true);
-    try {
-      const content = activeTabConfig.content.content;
-      await activeTabConfig.content.save(content);
+    setError(null);
+    setSaveSuccess(null);
 
-      if (tabId === 'about') {
-        updateConfig(prev => ({
-          ...prev,
-          portfolio: { ...prev.portfolio, aboutText: content },
-        }));
-      } else if (tabId === 'contact') {
-        const contact = parseContact(content);
-        updateConfig(prev => ({
-          ...prev,
-          portfolio: { ...prev.portfolio, contact },
-        }));
+    try {
+      // 1. Authoritative write to backend database
+      await portfolioApi.save({ key: tabId, content: textToSave });
+
+      // 2. Synchronize with local VirtualFS file so in-OS editor/cat/terminal reads match
+      const currentTab = TABS.find(t => t.id === tabId);
+      if (currentTab) {
+        const mime = currentTab.filePath.endsWith('.md') ? 'text/markdown' : 'text/plain';
+        vfs.writeFile(currentTab.filePath, textToSave, mime);
       }
 
-      alert('Saved successfully!');
+      setSaveSuccess(`"${currentTab?.label}" content saved to backend database!`);
+      setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err) {
-      console.error('Save failed:', err);
-      alert('Failed to save');
+      setError(getApiErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const renderTab = () => {
-    if (!activeTabConfig) return null;
-
-    return (
-      <div className="admin-section">
-        <div className="admin-section-header">
-          <h2>{activeTabConfig.label}</h2>
-          <button
-            className="admin-btn admin-btn-primary"
-            onClick={() => handleSave(activeTabConfig.id)}
-            disabled={saving}
-          >
-            {saving ? <Loader2 size={16} /> : <Save size={16} />} Save
-          </button>
-        </div>
-
-        <div className="admin-card">
-          <textarea
-            value={activeTabConfig.content.content}
-            onChange={e => activeTabConfig.content.setContent(e.target.value)}
-            className="admin-textarea"
-            placeholder={`Edit ${activeTabConfig.label} content...`}
-            spellCheck={false}
-          />
-
-          {activeTabConfig.content.error && (
-            <div className="admin-error">{activeTabConfig.content.error}</div>
-          )}
-        </div>
-
-        <div className="admin-hint">
-          <strong>File:</strong> {activeTabConfig.filePath} |
-          <strong>Status:</strong> {activeTabConfig.content.loading ? 'Loading...' :
-            activeTabConfig.content.error ? 'Error' : 'Ready'}
-        </div>
-      </div>
-    );
-  };
+  const activeTabDef = TABS.find(t => t.id === activeTab) || TABS[0];
 
   return (
     <div className="admin-section">
       <div className="admin-tabs">
-        {tabs.map(tab => (
+        {TABS.map(tab => (
           <button
             key={tab.id}
             className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id as TabId)}
+            onClick={() => { setActiveTab(tab.id); setError(null); setSaveSuccess(null); }}
             disabled={saving}
           >
             {tab.label}
@@ -115,21 +133,47 @@ export function AdminPortfolioContent() {
         ))}
       </div>
 
-      {renderTab()}
+      <div className="admin-section-header" style={{ marginTop: 16 }}>
+        <h2>{activeTabDef.label}</h2>
+        <button
+          className="admin-btn admin-btn-primary"
+          onClick={() => handleSave(activeTabDef.id)}
+          disabled={saving || loading}
+        >
+          {saving ? <Loader2 size={16} className="spinning" /> : <Save size={16} />} Save
+        </button>
+      </div>
+
+      {saveSuccess && (
+        <div className="admin-success" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#1a3a2a', border: '1px solid #2e7d32', borderRadius: 6, color: '#81c784', marginBottom: 16 }}>
+          <Check size={16} />
+          <span>{saveSuccess}</span>
+        </div>
+      )}
+
+      {error && <div className="admin-error" style={{ marginBottom: 16 }}>{error}</div>}
+
+      <div className="admin-card">
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 24, color: '#888' }}>
+            <Loader2 className="spinning" size={20} />
+            <span>Loading content from server...</span>
+          </div>
+        ) : (
+          <textarea
+            value={contentMap[activeTab]}
+            onChange={e => setContentMap({ ...contentMap, [activeTab]: e.target.value })}
+            className="admin-textarea"
+            placeholder={`Edit ${activeTabDef.label} content...`}
+            spellCheck={false}
+            rows={14}
+          />
+        )}
+      </div>
+
+      <div className="admin-hint" style={{ marginTop: 12 }}>
+        <strong>Backend Key:</strong> {activeTabDef.id} | <strong>VFS Sync Target:</strong> {activeTabDef.filePath}
+      </div>
     </div>
   );
-}
-
-function parseContact(text: string): Record<string, string> {
-  const lines = text.split('\n');
-  const contact: Record<string, string> = {};
-  lines.forEach(line => {
-    const colonIndex = line.indexOf(':');
-    if (colonIndex > 0) {
-      const key = line.slice(0, colonIndex).trim().toLowerCase();
-      const value = line.slice(colonIndex + 1).trim();
-      if (key && value) contact[key] = value;
-    }
-  });
-  return contact;
 }

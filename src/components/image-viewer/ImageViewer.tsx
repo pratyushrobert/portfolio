@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { vfs } from '../../lib/vfs';
-import { isFileNode } from '../../lib/vfs/nodes';
 import {
   ZoomIn,
   ZoomOut,
@@ -12,20 +11,23 @@ import {
   AlertCircle,
   Image,
   FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { useWindowStore } from '../../stores/useWindowStore';
+import type { DesktopOpenRequest } from '../../types/desktop';
 import './ImageViewer.css';
 
 interface ImageViewerProps {
   windowId: string;
   filePath?: string;
-  onOpenRequest?: (request: any) => void;
+  onOpenRequest?: (request: DesktopOpenRequest) => void;
 }
 
-export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }: ImageViewerProps) {
+export function ImageViewer({ windowId, filePath: propFilePath }: ImageViewerProps) {
   const { getWindow } = useWindowStore();
   const mimiWindow = getWindow(windowId);
   const windowFilePath = mimiWindow?.appParams?.path as string | undefined;
+  const isRemote = Boolean(mimiWindow?.appParams?.isRemote);
 
   const filePathToLoad = propFilePath || windowFilePath;
 
@@ -57,13 +59,20 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
 
   // Load image
   useEffect(() => {
-    if (filePathToLoad) {
+    if (mimiWindow?.appParams?.isRemote && mimiWindow.appParams.imageSrc) {
+      setImageSrc(String(mimiWindow.appParams.imageSrc));
+      const p = String(filePathToLoad || mimiWindow.appParams.title || 'image');
+      setFilePath(p);
+      setFileName(p.split('/').pop() || p);
+      setLoading(false);
+      setImageLoaded(true);
+    } else if (filePathToLoad) {
       loadImage(filePathToLoad);
     } else {
       setError('No file specified');
       setLoading(false);
     }
-  }, [filePathToLoad]);
+  }, [filePathToLoad, mimiWindow?.appParams]);
 
   const loadImage = useCallback(async (path: string) => {
     setLoading(true);
@@ -153,15 +162,23 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
     setLoading(false);
   }, []);
 
+  const computeFitZoom = useCallback((): number => {
+    if (!containerRef.current || naturalDimensions.width === 0) return 1;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const scaleX = (containerRect.width - 40) / naturalDimensions.width;
+    const scaleY = (containerRect.height - 40) / naturalDimensions.height;
+    return Math.min(scaleX, scaleY, 1);
+  }, [naturalDimensions.width, naturalDimensions.height]);
+
   const handleZoomIn = useCallback(() => setZoom(z => {
-    if (z === 'fit') return 1;
-    return Math.min(z * 1.2, 5);
-  }), []);
+    const current = z === 'fit' ? computeFitZoom() : z;
+    return Math.min(current * 1.2, 5);
+  }), [computeFitZoom]);
 
   const handleZoomOut = useCallback(() => setZoom(z => {
-    if (z === 'fit') return 1;
-    return Math.max(z / 1.2, 0.1);
-  }), []);
+    const current = z === 'fit' ? computeFitZoom() : z;
+    return Math.max(current / 1.2, 0.1);
+  }), [computeFitZoom]);
 
   const handleResetZoom = useCallback(() => setZoom(1), []);
 
@@ -172,7 +189,14 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
   const handleRotateLeft = useCallback(() => setRotation(r => (r - 90 + 360) % 360), []);
   const handleRotateRight = useCallback(() => setRotation(r => (r + 90) % 360), []);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const isFocused = mimiWindow?.isFocused ?? false;
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isFocused) return;
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      return;
+    }
     switch (e.key) {
       case '=':
       case '+':
@@ -193,12 +217,13 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
         handleRotateRight();
         break;
     }
-  }, [handleZoomIn, handleZoomOut, handleResetZoom, handleRotateRight]);
+  }, [isFocused, handleZoomIn, handleZoomOut, handleResetZoom, handleRotateRight]);
 
   useEffect(() => {
+    if (!isFocused) return;
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  }, [isFocused, handleKeyDown]);
 
   // Cleanup blob URL on unmount
   useEffect(() => {
@@ -209,31 +234,12 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
     };
   }, [imageSrc]);
 
-  const computeFitZoom = useCallback((): number => {
-    if (!containerRef.current || naturalDimensions.width === 0) return 1;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const scaleX = (containerRect.width - 40) / naturalDimensions.width;
-    const scaleY = (containerRect.height - 40) / naturalDimensions.height;
-    return Math.min(scaleX, scaleY, 1);
-  }, [naturalDimensions.width, naturalDimensions.height]);
-
   // Auto-fit when image loads or container resizes
   useEffect(() => {
     if (zoom === 'fit' && naturalDimensions.width > 0) {
       setZoom(computeFitZoom());
     }
   }, [containerSize, naturalDimensions, zoom, computeFitZoom]);
-
-  // Helper to compute displayed dimensions
-  const getDisplayedDimensions = () => {
-    const effectiveZoom = zoom === 'fit' ? computeFitZoom() : (typeof zoom === 'number' ? zoom : 1);
-    return {
-      width: naturalDimensions.width * effectiveZoom,
-      height: naturalDimensions.height * effectiveZoom,
-    };
-  };
-
-  const displayedDimensions = getDisplayedDimensions();
 
   if (loading) {
     return (
@@ -259,22 +265,55 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
   const displayedHeight = naturalDimensions.height * effectiveZoom;
 
   return (
-    <div className="image-viewer" onKeyDown={handleKeyDown} tabIndex={0} ref={containerRef}>
+    <div className="image-viewer" onKeyDown={e => handleKeyDown(e.nativeEvent)} tabIndex={0} ref={containerRef}>
       <div className="image-viewer-header">
         <div className="image-viewer-file-info">
           <Image size={18} className="image-viewer-icon" />
           <div className="image-viewer-file-details">
-            <div className="image-viewer-file-name">{fileName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="image-viewer-file-name">{fileName}</span>
+              {isRemote && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '1px 6px',
+                    borderRadius: 3,
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  GitHub (Read-Only)
+                </span>
+              )}
+            </div>
             <div className="image-viewer-file-path">{filePath}</div>
           </div>
         </div>
-        <div className="image-viewer-dimensions">
-          {imageLoaded && (
-            <>
-              <span>{naturalDimensions.width} × {naturalDimensions.height}</span>
-              <span className="zoom-level">{Math.round(effectiveZoom * 100)}%</span>
-            </>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {typeof mimiWindow?.appParams?.htmlUrl === 'string' && (
+            <a
+              href={mimiWindow.appParams.htmlUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="iv-btn"
+              style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, height: 26, padding: '0 8px', fontSize: 11 }}
+              title="Open on GitHub"
+            >
+              <ExternalLink size={12} />
+              <span>GitHub ↗</span>
+            </a>
           )}
+          <div className="image-viewer-dimensions">
+            {imageLoaded && (
+              <>
+                <span>{naturalDimensions.width} × {naturalDimensions.height}</span>
+                <span className="zoom-level">{Math.round(effectiveZoom * 100)}%</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -297,7 +336,7 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
       <div className="image-viewer-content" ref={containerRef}>
         {imageSrc && (
           <div className="image-container" style={{
-            transform: `rotate(${rotation}deg) scale(${effectiveZoom})`,
+            transform: `rotate(${rotation}deg)`,
             transformOrigin: 'center center',
             width: displayedWidth,
             height: displayedHeight,
@@ -309,6 +348,8 @@ export function ImageViewer({ windowId, filePath: propFilePath, onOpenRequest }:
               onLoad={handleImageLoad}
               onError={handleImageError}
               style={{
+                width: displayedWidth,
+                height: displayedHeight,
                 maxWidth: 'none',
                 maxHeight: 'none',
               }}

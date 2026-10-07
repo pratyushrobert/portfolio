@@ -1,0 +1,1331 @@
+/* ==========================================================================
+   MimiOS Liquid Glass Primitives & Control Surfaces
+   Shared design tokens, dock styling, control center, and calendar panels.
+   Strict adherence to neutral dark/graphite palette: NO purple, NO neon tints.
+   ========================================================================== */
+
+:root {
+  /* Liquid Glass Surface Tokens */
+  --liquid-glass-surface: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 28%,
+    rgba(14, 17, 24, 0.45) 70%,
+    rgba(8, 10, 15, 0.65) 100%
+  );
+  --liquid-glass-surface-dense: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.05) 28%,
+    rgba(14, 17, 24, 0.65) 70%,
+    rgba(8, 10, 15, 0.85) 100%
+  );
+  --liquid-glass-btn-bg: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(14, 16, 22, 0.42) 100%
+  );
+  --liquid-glass-btn-hover: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(22, 26, 36, 0.52) 100%
+  );
+  --liquid-glass-btn-active: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(28, 34, 48, 0.68) 100%
+  );
+
+  --liquid-glass-border: rgba(255, 255, 255, 0.16);
+  --liquid-glass-border-subtle: rgba(255, 255, 255, 0.09);
+  --liquid-glass-border-focused: rgba(255, 255, 255, 0.32);
+
+  --liquid-glass-shadow-dock:
+    inset 0 1.2px 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -1.2px 1px 0 rgba(0, 0, 0, 0.45),
+    0 8px 26px rgba(0, 0, 0, 0.48),
+    0 2px 8px rgba(0, 0, 0, 0.32);
+
+  --liquid-glass-shadow-flyout:
+    inset 0 1.5px 1.2px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1.5px 1.2px 0 rgba(0, 0, 0, 0.5),
+    0 16px 48px -4px rgba(0, 0, 0, 0.65),
+    0 6px 18px rgba(0, 0, 0, 0.4);
+
+  --liquid-glass-blur: blur(24px) saturate(160%) brightness(105%) contrast(104%);
+}
+
+/* ================= 1. FLOATING LIQUID-GLASS TASKBAR DOCK ================= */
+
+/* ================= 1. LIQUID-GLASS TASKBAR DOCK (FLOATING & CONNECTED) ================= */
+
+.desktop-panel {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 200;
+  user-select: none;
+  box-sizing: border-box;
+
+  /* Premium liquid glass shell */
+  background: var(--liquid-glass-surface);
+  backdrop-filter: var(--liquid-glass-blur);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  border: 1px solid var(--liquid-glass-border);
+  box-shadow: var(--liquid-glass-shadow-dock);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, border-color 0.2s ease;
+}
+
+/* --- HORIZONTAL ORIENTATIONS (TOP / BOTTOM) --- */
+.desktop-panel.top,
+.desktop-panel.bottom {
+  height: 42px;
+  padding: 0 8px;
+}
+
+/* Floating Horizontal */
+.desktop-panel.floating.top {
+  top: 8px;
+  left: 12px;
+  right: 12px;
+  border-radius: 14px;
+}
+
+.desktop-panel.floating.bottom {
+  bottom: 8px;
+  left: 12px;
+  right: 12px;
+  border-radius: 14px;
+}
+
+/* Connected Horizontal */
+.desktop-panel.connected.top {
+  top: 0;
+  left: 0;
+  right: 0;
+  border-radius: 0 0 12px 12px;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.desktop-panel.connected.bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+}
+
+/* --- VERTICAL ORIENTATIONS (LEFT / RIGHT) --- */
+.desktop-panel.left,
+.desktop-panel.right {
+  width: 48px;
+  flex-direction: column;
+  padding: 8px 0;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Floating Vertical */
+.desktop-panel.floating.left {
+  left: 8px;
+  top: 12px;
+  bottom: 12px;
+  border-radius: 14px;
+}
+
+.desktop-panel.floating.right {
+  right: 8px;
+  top: 12px;
+  bottom: 12px;
+  border-radius: 14px;
+}
+
+/* Connected Vertical */
+.desktop-panel.connected.left {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 0 12px 12px 0;
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.desktop-panel.connected.right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 12px 0 0 12px;
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+/* Default fallback positioning if class missing */
+.desktop-panel:not(.floating):not(.connected).top {
+  top: 8px;
+  left: 12px;
+  right: 12px;
+  border-radius: 14px;
+}
+.desktop-panel:not(.floating):not(.connected).bottom {
+  bottom: 8px;
+  left: 12px;
+  right: 12px;
+  border-radius: 14px;
+}
+
+@media (max-width: 640px) {
+  .desktop-panel.floating.top,
+  .desktop-panel.floating.bottom {
+    left: 6px;
+    right: 6px;
+    padding: 0 6px;
+    border-radius: 11px;
+  }
+}
+
+/* Specular Reflection on Horizontal Dock */
+.desktop-panel.top::before,
+.desktop-panel.bottom::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 25%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0.45) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+/* Specular Reflection on Vertical Dock */
+.desktop-panel.left::before,
+.desktop-panel.right::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 25%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0.45) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Dock Sections: Left, Center (centered), Right */
+.panel-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.panel-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  z-index: 2;
+  pointer-events: auto;
+  max-width: calc(100% - 320px);
+}
+
+.panel-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-left: auto;
+  z-index: 1;
+}
+
+/* Vertical Dock Section Layout */
+.desktop-panel.vertical .panel-left {
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.desktop-panel.vertical .panel-center {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.desktop-panel.vertical .panel-right {
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: auto;
+  margin-left: 0;
+}
+
+.desktop-panel.vertical .panel-btn-label,
+.desktop-panel.vertical .panel-clock-date,
+.desktop-panel.vertical .panel-clock-date-divider,
+.desktop-panel.vertical .panel-badge-label,
+.desktop-panel.vertical .panel-tray-battery-val {
+  display: none !important;
+}
+
+.desktop-panel.vertical .panel-button,
+.desktop-panel.vertical .panel-tray-pill,
+.desktop-panel.vertical .panel-clock-button,
+.desktop-panel.vertical .panel-badge-item {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Pinned Applications Group in Dock Center */
+.panel-center-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.desktop-panel.vertical .panel-center-content {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.panel-pinned-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.desktop-panel.vertical .panel-pinned-group {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.panel-pinned-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  background: var(--liquid-glass-btn-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+  outline: none;
+  flex-shrink: 0;
+}
+
+.panel-pinned-btn:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.desktop-panel.vertical .panel-pinned-btn:hover {
+  transform: translateX(1px);
+}
+
+.panel-pinned-btn.is-running::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+.desktop-panel.vertical .panel-pinned-btn.is-running::after {
+  bottom: auto;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.panel-pinned-btn.is-focused {
+  background: var(--liquid-glass-btn-active);
+  border-color: var(--liquid-glass-border-focused);
+  color: #ffffff;
+}
+
+.panel-pinned-btn.is-focused::after {
+  background: #ffffff;
+  width: 10px;
+  border-radius: 2px;
+  height: 2px;
+}
+
+.desktop-panel.vertical .panel-pinned-btn.is-focused::after {
+  width: 2px;
+  height: 10px;
+}
+
+.panel-center-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.desktop-panel.vertical .panel-center-divider {
+  width: 18px;
+  height: 1px;
+  margin: 4px 0;
+}
+
+/* Liquid Glass Buttons in Dock */
+.panel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  border-radius: 8px;
+  background: var(--liquid-glass-btn-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-ui, var(--sans));
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  outline: none;
+}
+
+.panel-button:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0.8px rgba(255, 255, 255, 0.32),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.panel-button.active,
+.panel-button:active {
+  background: var(--liquid-glass-btn-active);
+  border-color: var(--liquid-glass-border-focused);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.panel-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 1px;
+}
+
+.panel-button.launcher {
+  width: 34px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+/* Open Application Tabs in Dock */
+.panel-button-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.panel-button-group::-webkit-scrollbar {
+  display: none;
+}
+
+.panel-button.window-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  width: auto;
+  min-width: 34px;
+  max-width: 170px;
+  padding: 0 10px;
+  gap: 7px;
+  border-radius: 8px;
+}
+
+.panel-button.window-btn.focused {
+  background: var(--liquid-glass-btn-active);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1.2px 1px rgba(255, 255, 255, 0.42),
+    0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Subtle Active Underline Pill */
+.panel-button.window-btn.focused::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), #ffffff, rgba(255, 255, 255, 0.3));
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}
+
+.panel-button.window-btn.minimized {
+  opacity: 0.65;
+}
+
+.panel-button.window-btn.minimized:hover {
+  opacity: 1;
+}
+
+.panel-btn-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-btn-label {
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+/* ================= 2. TASKBAR INTERACTIVE TIME / DATE BUTTON ================= */
+
+.panel-clock-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-ui, var(--sans));
+  color: #ffffff;
+  background: var(--liquid-glass-btn-bg);
+  border: 1px solid var(--liquid-glass-border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.panel-clock-button:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0.8px rgba(255, 255, 255, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.panel-clock-button.active {
+  background: var(--liquid-glass-btn-active);
+  border-color: var(--liquid-glass-border-focused);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.panel-clock-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 1px;
+}
+
+.panel-clock-time {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+.panel-clock-date-divider {
+  width: 1px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.panel-clock-date {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11.5px;
+}
+
+@media (max-width: 580px) {
+  .panel-clock-date-divider,
+  .panel-clock-date {
+    display: none;
+  }
+}
+
+/* ================= 3. SYSTEM TRAY CONTROL PILL ================= */
+
+.panel-tray-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--liquid-glass-btn-bg);
+  border: 1px solid var(--liquid-glass-border-subtle);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.panel-tray-pill:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0.8px rgba(255, 255, 255, 0.32),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.panel-tray-pill.active {
+  background: var(--liquid-glass-btn-active);
+  border-color: var(--liquid-glass-border-focused);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.panel-tray-pill:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 1px;
+}
+
+.panel-tray-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.panel-tray-icon.is-disabled {
+  opacity: 0.45;
+}
+
+.panel-tray-battery-val {
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.8);
+  margin-left: -2px;
+}
+
+/* User & Admin Tray Badges */
+.panel-badge-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: 8px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  background: var(--liquid-glass-btn-bg);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  outline: none;
+}
+
+.panel-badge-item:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+.panel-badge-item:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 1px;
+}
+
+.panel-badge-label {
+  font-size: 11.5px;
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 720px) {
+  .panel-badge-label {
+    display: none;
+  }
+}
+
+/* ================= 4. LIQUID GLASS FLYOUT POPUP SHELL ================= */
+
+.liquid-glass-flyout {
+  position: fixed;
+  z-index: 500;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--liquid-glass-surface-dense);
+  backdrop-filter: var(--liquid-glass-blur);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  border: 1px solid var(--liquid-glass-border);
+  box-shadow: var(--liquid-glass-shadow-flyout);
+  color: #ffffff;
+  user-select: none;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  /* Material directional unfold animations */
+  animation: liquidFlyoutDown 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.liquid-glass-flyout.position-top,
+.app-launcher.position-top {
+  animation: liquidFlyoutDown 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.liquid-glass-flyout.position-bottom,
+.app-launcher.position-bottom {
+  animation: liquidFlyoutUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.liquid-glass-flyout.position-left,
+.app-launcher.position-left {
+  animation: liquidFlyoutRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.liquid-glass-flyout.position-right,
+.app-launcher.position-right {
+  animation: liquidFlyoutLeft 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes liquidFlyoutDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes liquidFlyoutUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes liquidFlyoutRight {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.985);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes liquidFlyoutLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(8px) scale(0.985);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-flyout {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Specular Upper-Edge Reflection on Flyouts */
+.liquid-glass-flyout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 25%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.45) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Flyout Section Headers */
+.liquid-flyout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liquid-flyout-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liquid-flyout-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ================= 5. QUICK SETTINGS CONTROLS ================= */
+
+/* Connectivity 3-Column Toggle Grid */
+.qs-connectivity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.qs-toggle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  height: 64px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  background: var(--liquid-glass-btn-bg);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.qs-toggle-btn:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.qs-toggle-btn.is-active {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.24) 0%,
+    rgba(255, 255, 255, 0.12) 40%,
+    rgba(32, 38, 52, 0.7) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1.2px 1px rgba(255, 255, 255, 0.45),
+    0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.qs-toggle-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 1px;
+}
+
+.qs-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  transition: background 0.16s ease;
+}
+
+.qs-toggle-btn.is-active .qs-toggle-icon {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.qs-toggle-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+}
+
+.qs-toggle-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qs-toggle-status {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qs-toggle-btn.is-active .qs-toggle-status {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Sliders Group (Brightness & Volume) */
+.qs-sliders-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.qs-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qs-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.qs-slider-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qs-slider-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.qs-slider-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qs-slider-mute-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.qs-slider-mute-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.qs-slider-mute-btn.is-muted {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+/* Custom Liquid Glass Range Slider Track & Thumb */
+.qs-range-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.qs-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.qs-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+}
+
+.qs-range-slider:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 2px;
+}
+
+/* Quick Settings Action Row (Settings, Battery, Power) */
+.qs-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.qs-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  background: var(--liquid-glass-btn-bg);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qs-action-btn:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+.qs-action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.qs-action-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+}
+
+/* ================= 6. CALENDAR & CLOCK PANEL ================= */
+
+.cal-header-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cal-clock-digits {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro', system-ui, sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  margin-bottom: 4px;
+}
+
+.cal-clock-date-line {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Month Navigation Bar */
+.cal-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 8px;
+}
+
+.cal-month-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.cal-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cal-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.cal-nav-btn.today-btn {
+  width: auto;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Calendar Days Grid */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 14px;
+}
+
+.cal-weekday {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 4px 0;
+  text-transform: uppercase;
+}
+
+.cal-day-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: default;
+  transition: all 0.15s ease;
+}
+
+.cal-day-cell.other-month {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+.cal-day-cell.today {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(32, 38, 52, 0.6) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.4),
+    0 1px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Pinned Apps Section */
+.cal-pinned-section {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cal-pinned-header {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+.cal-pinned-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.cal-pinned-app-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  background: var(--liquid-glass-btn-bg);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.cal-pinned-app-btn:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cal-pinned-app-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+}
+
+.cal-pinned-app-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-pinned-app-name {
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}

@@ -1,6 +1,5 @@
 import type { Command } from '../commands';
 import { resolvePath, setCwd, formatError } from '../commands';
-import { vfs } from '../../../lib/vfs';
 
 export const cdCommand: Command = {
   name: 'cd',

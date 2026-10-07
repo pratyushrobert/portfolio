@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 36" width="64" height="36" fill="none">
+  <!-- Minimalist Running / Leaping Cat Silhouette for MimiOS Boot Track -->
+  <g fill="#f8fafc">
+    <!-- Tail sweeping backwards in aerodynamic curve -->
+    <path d="M 6 12 C 4 16, 2 24, 7 24 C 11 24, 11 18, 14 16 C 16 15, 18 15, 20 16 Z" />
+    <!-- Rear body & flank -->
+    <path d="M 18 16 C 22 13, 28 13, 34 15 C 38 16, 42 16, 46 14 C 47 13, 49 14, 50 15 C 46 18, 42 19, 36 19 C 28 19, 22 20, 18 16 Z" />
+    <!-- Head & Upright Ears -->
+    <path d="M 46 14 C 47 11, 48 8, 49 7 C 50 9, 51 11, 52 11 C 53 9, 54 7, 55 7 C 55 9, 55 12, 57 13 C 58 14, 57 16, 55 16 C 52 17, 49 16, 46 14 Z" />
+    <!-- Front extended reaching paws -->
+    <path d="M 44 18 C 47 21, 52 23, 58 24 C 59 24, 59 25, 57 26 C 52 26, 46 22, 42 18 Z" />
+    <!-- Rear stretched leaping leg -->
+    <path d="M 20 18 C 17 22, 13 26, 8 28 C 7 28, 7 27, 9 26 C 13 24, 17 20, 19 17 Z" />
+    <!-- Secondary front paw for depth -->
+    <path d="M 42 17 C 45 20, 49 22, 54 23 C 53 24, 50 24, 46 21 Z" fill-opacity="0.6"/>
+  </g>
+</svg>

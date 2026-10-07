@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { FileNode, DirectoryNode, SymlinkNode, AnyVFSNode, NodeType } from '../../types/vfs';
-import { generateStorageKey } from './binaryStorage';
 
 export function createFileNode(
   name: string,

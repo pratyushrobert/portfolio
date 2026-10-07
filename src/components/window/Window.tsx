@@ -1,9 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { useDraggable, useResizable } from '../../hooks/useDraggable';
 import { WindowControls } from './WindowControls';
-import type { WindowState, WindowProps } from '../../types/desktop';
+import type { WindowState } from '../../types/desktop';
 import { useWindowStore } from '../../stores/useWindowStore';
+import { useDesktopStore } from '../../stores/useDesktopStore';
+import { getAppIcon } from '../../lib/icons';
 import './Window.css';
 
 interface WindowContainerProps {
@@ -14,8 +15,9 @@ interface WindowContainerProps {
 export function WindowContainer({ window, children }: WindowContainerProps) {
   const {
     id,
+    appId,
     title,
-    icon: IconComponent,
+    icon,
     x,
     y,
     width,
@@ -27,6 +29,10 @@ export function WindowContainer({ window, children }: WindowContainerProps) {
   } = window;
 
   const { focusWindow, closeWindow, minimizeWindow, maximizeWindow } = useWindowStore();
+  const panelPosition = useDesktopStore(state => state.panelPosition);
+  const panelStyle = useDesktopStore(state => state.panelStyle ?? 'floating');
+  const showPanel = useDesktopStore(state => state.showPanel);
+
   const contentRef = useRef<HTMLDivElement>(null);
   const titleBarRef = useRef<HTMLDivElement>(null);
 
@@ -48,25 +54,50 @@ export function WindowContainer({ window, children }: WindowContainerProps) {
   );
 
   useEffect(() => {
-    if (isFocused) {
+    if (isFocused && !isMinimized) {
       document.addEventListener('keydown', handleKeyDown);
       windowRef.current?.focus();
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isFocused, handleKeyDown]);
+  }, [isFocused, isMinimized, handleKeyDown, windowRef]);
 
-  if (isMinimized) return null;
+  const panelH = panelStyle === 'floating' ? 50 : 42;
+  const panelW = panelStyle === 'floating' ? 56 : 48;
+
+  let maxLeft: number | string = 0;
+  let maxTop: number | string = 0;
+  let maxWidth: number | string = '100vw';
+  let maxHeight: number | string = '100vh';
+
+  if (showPanel) {
+    if (panelPosition === 'top') {
+      maxTop = `${panelH}px`;
+      maxHeight = `calc(100vh - ${panelH}px)`;
+    } else if (panelPosition === 'bottom') {
+      maxHeight = `calc(100vh - ${panelH}px)`;
+    } else if (panelPosition === 'left') {
+      maxLeft = `${panelW}px`;
+      maxWidth = `calc(100vw - ${panelW}px)`;
+    } else if (panelPosition === 'right') {
+      maxWidth = `calc(100vw - ${panelW}px)`;
+    }
+  }
 
   const style: React.CSSProperties = {
-    left: isMaximized ? 0 : x,
-    top: isMaximized ? 0 : y,
-    width: isMaximized ? '100vw' : width,
-    height: isMaximized ? 'calc(100vh - var(--panel-height, 40px))' : height,
+    display: isMinimized ? 'none' : 'flex',
+    left: isMaximized ? maxLeft : x,
+    top: isMaximized ? maxTop : y,
+    width: isMaximized ? maxWidth : width,
+    height: isMaximized ? maxHeight : height,
     zIndex,
-    transform: isMaximized ? 'none' : undefined,
   };
 
-  const windowElement = (
+  const renderIcon = () => {
+    const Comp = getAppIcon(icon || appId);
+    return <Comp className="window-icon" size={16} />;
+  };
+
+  return (
     <div
       ref={windowRef}
       className={`window ${isFocused ? 'focused' : ''} ${isMaximized ? 'maximized' : ''}`}
@@ -75,16 +106,16 @@ export function WindowContainer({ window, children }: WindowContainerProps) {
       aria-label={title}
       tabIndex={0}
       onMouseDown={() => focusWindow(id)}
-      onKeyDown={handleKeyDown}
+      onKeyDown={e => handleKeyDown(e.nativeEvent)}
     >
       <div
         ref={titleBarRef}
         className="window-titlebar"
         onMouseDown={handleMouseDown}
-        onDoubleClick={() => !isMaximized && maximizeWindow(id)}
+        onDoubleClick={() => maximizeWindow(id)}
       >
         <div className="window-titlebar-left">
-          {IconComponent && <IconComponent className="window-icon" size={16} />}
+          {renderIcon()}
           <span className="window-title">{title}</span>
         </div>
         <WindowControls
@@ -124,6 +155,4 @@ export function WindowContainer({ window, children }: WindowContainerProps) {
       )}
     </div>
   );
-
-  return createPortal(windowElement, document.getElementById('window-layer')!);
 }

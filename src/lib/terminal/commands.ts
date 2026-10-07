@@ -1,5 +1,4 @@
 import { vfs } from '../../lib/vfs';
-import type { AnyVFSNode } from '../../types/vfs';
 
 export interface CommandContext {
   vfs: typeof vfs;
@@ -7,6 +6,7 @@ export interface CommandContext {
   history: string[];
   write: (text: string) => void;
   writeln: (text: string) => void;
+  clear?: () => void;
 }
 
 export type CommandHandler = (args: string[], ctx: CommandContext) => Promise<string | void> | string | void;
@@ -15,6 +15,7 @@ export interface Command {
   name: string;
   description: string;
   usage?: string;
+  hidden?: boolean;
   handler: CommandHandler;
 }
 
