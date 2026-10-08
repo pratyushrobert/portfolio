@@ -104,7 +104,7 @@ export function AdminSiteConfig() {
         <div>
           <h2>Site Configuration</h2>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Manage site identity, meta descriptions, and contact channels stored in SQLite
+            Manage site identity, meta descriptions, and contact channels stored in PostgreSQL
           </span>
         </div>
         <button

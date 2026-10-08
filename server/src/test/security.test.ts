@@ -9,17 +9,17 @@ import { SESSION_COOKIE_NAME } from '../services/auth.js';
 
 describe('security foundations', () => {
   let app: FastifyInstance;
-  let database: ReturnType<typeof initializeDatabase>;
+  let database: Awaited<ReturnType<typeof initializeDatabase>>;
   const config = loadTestConfig();
 
   beforeAll(async () => {
-    database = initializeDatabase(config);
+    database = await initializeDatabase(config);
     app = await buildApp({ database, config });
   });
 
   afterAll(async () => {
     await app.close();
-    closeDatabase(database);
+    await closeDatabase(database);
   });
 
   it('requires environment-backed credentials and a strong session secret', () => {

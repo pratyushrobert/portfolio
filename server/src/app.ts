@@ -6,10 +6,12 @@ import fastifyMultipart from '@fastify/multipart';
 import fastifyRateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import { mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { RuntimeConfig } from './config/env.js';
 import type { AppDatabase } from './db/index.js';
 import { createAuthService } from './services/auth.js';
+import { createStorageService, type StorageService } from './services/storage.js';
 import { adminRoutes } from './routes/admin.js';
 import { assetAdminRoutes, assetRoutes } from './routes/assets.js';
 import { authRoutes } from './routes/auth.js';
@@ -24,14 +26,21 @@ import { skillAdminRoutes, skillRoutes } from './routes/skills.js';
 export interface AppOptions {
   database: AppDatabase;
   config: RuntimeConfig;
+  storageService?: StorageService;
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const { database, config } = options;
-  await mkdir(resolve(config.UPLOAD_DIR), { recursive: true });
+  const storageService = options.storageService ?? createStorageService(config);
+
+  if (!storageService.isExternalStorage && !existsSync(resolve(config.UPLOAD_DIR))) {
+    await mkdir(resolve(config.UPLOAD_DIR), { recursive: true });
+  }
+
   const authService = createAuthService(database);
-  authService.deleteExpiredSessions();
-  const context = { database, authService, config };
+  await authService.deleteExpiredSessions();
+
+  const context = { database, authService, storageService, config };
   const fastify = Fastify({
     logger: config.NODE_ENV === 'test' ? false : { level: config.NODE_ENV === 'production' ? 'info' : 'debug' },
     bodyLimit: config.UPLOAD_MAX_SIZE + 1024 * 1024,
@@ -66,11 +75,20 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await fastify.register(fastifyMultipart, {
     limits: { fileSize: config.UPLOAD_MAX_SIZE, files: 1, fields: 20 },
   });
-  await fastify.register(fastifyStatic, {
-    root: resolve(config.UPLOAD_DIR),
-    prefix: '/uploads/',
-    decorateReply: false,
-  });
+
+  // Supabase Storage redirect or local static file serving
+  if (storageService.isExternalStorage) {
+    fastify.get('/uploads/:filename', async (request, reply) => {
+      const { filename } = request.params as { filename: string };
+      return reply.redirect(storageService.getPublicUrl(filename), 302);
+    });
+  } else {
+    await fastify.register(fastifyStatic, {
+      root: resolve(config.UPLOAD_DIR),
+      prefix: '/uploads/',
+      decorateReply: false,
+    });
+  }
 
   fastify.get('/health', async () => ({ status: 'ok', timestamp: Date.now() }));
 

@@ -78,7 +78,7 @@ const mockReadmeFile = {
 
 describe('GitHub Repository Remote Browsing API', () => {
   let app: FastifyInstance;
-  let database: ReturnType<typeof initializeDatabase>;
+  let database: Awaited<ReturnType<typeof initializeDatabase>>;
   let cookie = '';
   const testSecretToken = 'super-secret-token-xyz-777';
   const config = {
@@ -90,7 +90,7 @@ describe('GitHub Repository Remote Browsing API', () => {
   let projectWithoutRepoId = '';
 
   beforeAll(async () => {
-    database = initializeDatabase(config);
+    database = await initializeDatabase(config);
     app = await buildApp({ database, config });
 
     const login = await app.inject({
@@ -133,7 +133,7 @@ describe('GitHub Repository Remote Browsing API', () => {
   afterAll(async () => {
     vi.restoreAllMocks();
     await app.close();
-    closeDatabase(database);
+    await closeDatabase(database);
   });
 
   beforeEach(() => {

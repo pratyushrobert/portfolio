@@ -6,17 +6,17 @@ import { closeDatabase, initializeDatabase } from '../db/index.js';
 
 describe('authentication API', () => {
   let app: FastifyInstance;
-  let database: ReturnType<typeof initializeDatabase>;
+  let database: Awaited<ReturnType<typeof initializeDatabase>>;
   const config = loadTestConfig();
 
   beforeAll(async () => {
-    database = initializeDatabase(config);
+    database = await initializeDatabase(config);
     app = await buildApp({ database, config });
   });
 
   afterAll(async () => {
     await app.close();
-    closeDatabase(database);
+    await closeDatabase(database);
   });
 
   it('rejects invalid credentials without creating a session', async () => {

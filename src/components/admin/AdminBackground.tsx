@@ -479,7 +479,7 @@ export function AdminBackground() {
             {uploading ? <Loader2 size={24} className="spinning" /> : <Upload size={24} />}
             <span>{uploading ? 'Uploading to server...' : 'Choose an image file to upload & set'}</span>
           </label>
-          <p className="admin-hint">Files are stored securely in backend storage (`server/uploads/`) and recorded in the database.</p>
+          <p className="admin-hint">Files are stored securely in Supabase Storage (`mimios-assets`) and recorded in the database.</p>
         </div>
       </div>
 

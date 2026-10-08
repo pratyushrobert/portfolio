@@ -6,12 +6,12 @@ import { loadTestConfig } from './test-app.js';
 
 describe('portfolio integration lifecycle', () => {
   let app: FastifyInstance;
-  let database: ReturnType<typeof initializeDatabase>;
+  let database: Awaited<ReturnType<typeof initializeDatabase>>;
   let cookie = '';
   const config = loadTestConfig();
 
   beforeAll(async () => {
-    database = initializeDatabase(config);
+    database = await initializeDatabase(config);
     app = await buildApp({ database, config });
     const login = await app.inject({
       method: 'POST',
@@ -23,7 +23,7 @@ describe('portfolio integration lifecycle', () => {
 
   afterAll(async () => {
     await app.close();
-    closeDatabase(database);
+    await closeDatabase(database);
   });
 
   it('serves empty collections gracefully on initial state', async () => {

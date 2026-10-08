@@ -22,7 +22,7 @@ const mockGitHubRepoData = {
 
 describe('GitHub Project Synchronization API', () => {
   let app: FastifyInstance;
-  let database: ReturnType<typeof initializeDatabase>;
+  let database: Awaited<ReturnType<typeof initializeDatabase>>;
   let cookie = '';
   const testSecretToken = 'super-secret-github-token-998877';
   const config = {
@@ -33,7 +33,7 @@ describe('GitHub Project Synchronization API', () => {
   let createdProjectId = '';
 
   beforeAll(async () => {
-    database = initializeDatabase(config);
+    database = await initializeDatabase(config);
     app = await buildApp({ database, config });
 
     const login = await app.inject({
@@ -67,7 +67,7 @@ describe('GitHub Project Synchronization API', () => {
   afterAll(async () => {
     vi.restoreAllMocks();
     await app.close();
-    closeDatabase(database);
+    await closeDatabase(database);
   });
 
   it('rejects unauthenticated sync requests with 401', async () => {

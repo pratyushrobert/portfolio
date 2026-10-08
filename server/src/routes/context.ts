@@ -1,10 +1,12 @@
 import type { AppDatabase } from '../db/index.js';
 import type { RuntimeConfig } from '../config/env.js';
 import type { AuthService } from '../services/auth.js';
+import type { StorageService } from '../services/storage.js';
 
 export interface RouteContext {
   database: AppDatabase;
   authService: AuthService;
+  storageService: StorageService;
   config: RuntimeConfig;
 }
 
@@ -21,11 +23,19 @@ export function parseJsonArray(value: unknown): string[] {
   }
 }
 
-export function publicAsset(row: Record<string, unknown>): Record<string, unknown> {
+export function publicAsset(row: Record<string, unknown>, storageService?: StorageService): Record<string, unknown> {
+  const assetPath = String(row.asset_path);
+  let url = `/uploads/${assetPath}`;
+  if (assetPath.startsWith('http://') || assetPath.startsWith('https://')) {
+    url = assetPath;
+  } else if (storageService?.isExternalStorage) {
+    url = storageService.getPublicUrl(assetPath);
+  }
+
   return {
     ...row,
     tags: parseJsonArray(row.tags),
-    url: `/uploads/${String(row.asset_path)}`,
+    url,
     featured: Boolean(row.featured),
     visibility: Boolean(row.visibility),
   };

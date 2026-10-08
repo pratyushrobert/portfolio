@@ -249,8 +249,8 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 <Database size={16} style={{ color: 'var(--accent)' }} />
                 <h3 style={{ margin: 0 }}>Database Storage</h3>
               </div>
-              <p className="status-ok">Fastify 5 + SQLite Backend</p>
-              <div className="admin-card-meta">Database file: server/data/mimios.db</div>
+              <p className="status-ok">Fastify 5 + PostgreSQL Backend</p>
+              <div className="admin-card-meta">Database: Supabase PostgreSQL (Managed Pool)</div>
             </div>
           </div>
         </>

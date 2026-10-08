@@ -9,11 +9,11 @@ export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 type StoredUser = AuthUser & { password_hash: string };
 
 export interface AuthService {
-  verifyCredentials(email: string, password: string): AuthUser | null;
-  createSession(userId: string): Session;
-  getUserFromSession(sessionId: string): AuthUser | null;
-  deleteSession(sessionId: string): void;
-  deleteExpiredSessions(): void;
+  verifyCredentials(email: string, password: string): Promise<AuthUser | null>;
+  createSession(userId: string): Promise<Session>;
+  getUserFromSession(sessionId: string): Promise<AuthUser | null>;
+  deleteSession(sessionId: string): Promise<void>;
+  deleteExpiredSessions(): Promise<void>;
 }
 
 // Constant-time dummy hash to prevent email enumeration via timing side-channels
@@ -21,12 +21,12 @@ const DUMMY_HASH = '$2a$12$lHjbCXof903VQtVBoQVtgOxLjKe00OXALWjSq4BOpRIFRVIVOusJG
 
 export function createAuthService(database: AppDatabase): AuthService {
   return {
-    verifyCredentials(email, password) {
-      const user = database.prepare(`
+    async verifyCredentials(email, password) {
+      const user = await database.queryOne<StoredUser>(`
         SELECT id, email, name, role, password_hash
         FROM users
-        WHERE email = ? AND role = 'admin'
-      `).get(email) as StoredUser | undefined;
+        WHERE email = $1 AND role = 'admin'
+      `, [email]);
 
       const hashToCompare = user ? user.password_hash : DUMMY_HASH;
       const isValid = bcrypt.compareSync(password, hashToCompare);
@@ -43,27 +43,27 @@ export function createAuthService(database: AppDatabase): AuthService {
       };
     },
 
-    createSession(userId) {
+    async createSession(userId) {
       const session: Session = {
         id: randomUUID(),
         user_id: userId,
         expires_at: Date.now() + SESSION_TTL_MS,
         created_at: Date.now(),
       };
-      database.prepare(`
+      await database.execute(`
         INSERT INTO sessions (id, user_id, expires_at, created_at)
-        VALUES (?, ?, ?, ?)
-      `).run(session.id, session.user_id, session.expires_at, session.created_at);
+        VALUES ($1, $2, $3, $4)
+      `, [session.id, session.user_id, session.expires_at, session.created_at]);
       return session;
     },
 
-    getUserFromSession(sessionId) {
-      const row = database.prepare(`
+    async getUserFromSession(sessionId) {
+      const row = await database.queryOne<AuthUser>(`
         SELECT u.id, u.email, u.name, u.role
         FROM sessions s
         INNER JOIN users u ON u.id = s.user_id
-        WHERE s.id = ? AND s.expires_at > ? AND u.role = 'admin'
-      `).get(sessionId, Date.now()) as AuthUser | undefined;
+        WHERE s.id = $1 AND s.expires_at > $2 AND u.role = 'admin'
+      `, [sessionId, Date.now()]);
 
       if (!row) {
         return null;
@@ -72,12 +72,12 @@ export function createAuthService(database: AppDatabase): AuthService {
       return { ...row, role: 'admin' };
     },
 
-    deleteSession(sessionId) {
-      database.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
+    async deleteSession(sessionId) {
+      await database.execute('DELETE FROM sessions WHERE id = $1', [sessionId]);
     },
 
-    deleteExpiredSessions() {
-      database.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now());
+    async deleteExpiredSessions() {
+      await database.execute('DELETE FROM sessions WHERE expires_at <= $1', [Date.now()]);
     },
   };
 }

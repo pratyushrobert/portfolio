@@ -25,12 +25,12 @@ const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0l
 
 describe('portfolio API', () => {
   let app: FastifyInstance;
-  let database: ReturnType<typeof initializeDatabase>;
+  let database: Awaited<ReturnType<typeof initializeDatabase>>;
   let cookie = '';
   const config = loadTestConfig();
 
   beforeAll(async () => {
-    database = initializeDatabase(config);
+    database = await initializeDatabase(config);
     app = await buildApp({ database, config });
     const login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: config.ADMIN_EMAIL, password: config.ADMIN_PASSWORD } });
     cookie = String(login.headers['set-cookie']);
@@ -38,7 +38,7 @@ describe('portfolio API', () => {
 
   afterAll(async () => {
     await app.close();
-    closeDatabase(database);
+    await closeDatabase(database);
     await rm(resolve(config.UPLOAD_DIR), { recursive: true, force: true });
   });
 

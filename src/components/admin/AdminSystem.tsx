@@ -33,15 +33,15 @@ export function AdminSystem({ windowId }: { windowId: string }) {
 
         <div className="admin-card">
           <h3>Backend Architecture</h3>
-          <p className="status-ok">Fastify 5 + SQLite</p>
-          <div className="admin-card-meta">Database: server/data/mimios.db</div>
+          <p className="status-ok">Fastify 5 + PostgreSQL (Supabase)</p>
+          <div className="admin-card-meta">Database: Supabase PostgreSQL Managed Pool</div>
           <div className="admin-card-meta">API Prefix: /api/admin/*</div>
           <div className="admin-card-meta">Validation: Zod schemas on all endpoints</div>
         </div>
 
         <div className="admin-card">
           <h3>Storage Layers</h3>
-          <p>Authoritative Data: SQLite</p>
+          <p>Authoritative Data: PostgreSQL (Supabase)</p>
           <div className="admin-card-meta">Projects, Skills, Experience, Certificates: Backend DB</div>
           <div className="admin-card-meta">Visitor OS Files: Browser IndexedDB (VirtualFS)</div>
           <div className="admin-card-meta">UI Appearance: Local preferences</div>
@@ -56,7 +56,7 @@ export function AdminSystem({ windowId }: { windowId: string }) {
           </button>
         </div>
         <p className="admin-hint" style={{ marginTop: '12px' }}>
-          Logging out clears the server-side SQLite session and unsets the signed session cookie.
+          Logging out clears the server-side PostgreSQL session and unsets the signed session cookie.
         </p>
       </div>
 

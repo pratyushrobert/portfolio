@@ -48,7 +48,7 @@ function projectUpdateValues(body: Record<string, unknown>): { assignments: stri
     live_url: (value) => value,
     featured_image: (value) => value,
     visibility: (value) => value,
-    featured: (value) => value ? 1 : 0,
+    featured: (value) => (value ? 1 : 0),
     sort_order: (value) => value,
     github_repo: (value) => value,
   };
@@ -57,8 +57,8 @@ function projectUpdateValues(body: Record<string, unknown>): { assignments: stri
   for (const [key, value] of Object.entries(body)) {
     const serializer = columns[key];
     if (serializer) {
-      assignments.push(`${key} = ?`);
       values.push(serializer(value));
+      assignments.push(`${key} = $${values.length}`);
     }
   }
   return { assignments, values };
@@ -66,10 +66,10 @@ function projectUpdateValues(body: Record<string, unknown>): { assignments: stri
 
 export async function projectRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
   fastify.get('/', async () => {
-    const rows = context.database.prepare(`
+    const rows = await context.database.queryAll<Record<string, unknown>>(`
       SELECT * FROM projects WHERE visibility = 'public'
       ORDER BY sort_order ASC, created_at DESC
-    `).all() as Array<Record<string, unknown>>;
+    `);
     return { success: true, data: rows.map(serializeProject) };
   });
 
@@ -77,7 +77,10 @@ export async function projectRoutes(fastify: FastifyInstance, context: RouteCont
     preValidation: [validateParams(idParamSchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      const row = await context.database.queryOne<Record<string, unknown>>(
+        "SELECT * FROM projects WHERE id = $1 AND visibility = 'public'",
+        [id]
+      );
       if (!row) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
@@ -89,7 +92,10 @@ export async function projectRoutes(fastify: FastifyInstance, context: RouteCont
     preValidation: [validateParams(idParamSchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      const row = await context.database.queryOne<Record<string, unknown>>(
+        "SELECT * FROM projects WHERE id = $1 AND visibility = 'public'",
+        [id]
+      );
       if (!row) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
@@ -112,7 +118,10 @@ export async function projectRoutes(fastify: FastifyInstance, context: RouteCont
     preValidation: [validateParams(idParamSchema), validateQuery(repoContentsQuerySchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      const row = await context.database.queryOne<Record<string, unknown>>(
+        "SELECT * FROM projects WHERE id = $1 AND visibility = 'public'",
+        [id]
+      );
       if (!row) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
@@ -146,7 +155,10 @@ export async function projectRoutes(fastify: FastifyInstance, context: RouteCont
     preValidation: [validateParams(idParamSchema), validateQuery(repoFileQuerySchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const row = context.database.prepare("SELECT * FROM projects WHERE id = ? AND visibility = 'public'").get(id) as Record<string, unknown> | undefined;
+      const row = await context.database.queryOne<Record<string, unknown>>(
+        "SELECT * FROM projects WHERE id = $1 AND visibility = 'public'",
+        [id]
+      );
       if (!row) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
@@ -181,7 +193,9 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
   const admin = authenticate(context.authService);
 
   fastify.get('/', { preHandler: [admin] }, async () => {
-    const rows = context.database.prepare('SELECT * FROM projects ORDER BY sort_order ASC, created_at DESC').all() as Array<Record<string, unknown>>;
+    const rows = await context.database.queryAll<Record<string, unknown>>(
+      'SELECT * FROM projects ORDER BY sort_order ASC, created_at DESC'
+    );
     return { success: true, data: rows.map(serializeProject) };
   });
 
@@ -190,7 +204,10 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
     preValidation: [validateParams(idParamSchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const row = context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+      const row = await context.database.queryOne<Record<string, unknown>>(
+        'SELECT * FROM projects WHERE id = $1',
+        [id]
+      );
       if (!row) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
@@ -205,12 +222,24 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
       const data = request.body as ProjectInput;
       const id = randomUUID();
       const now = Date.now();
-      context.database.prepare(`
-        INSERT INTO projects (id, name, description, long_description, technologies, github_url, live_url, featured_image, visibility, featured, sort_order, github_repo, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(id, data.name, data.description, data.long_description ?? null, JSON.stringify(data.technologies), data.github_url ?? null,
-        data.live_url ?? null, data.featured_image ?? null, data.visibility, data.featured ? 1 : 0, data.sort_order, data.github_repo ?? null, now, now);
-      return reply.status(201).send({ success: true, data: serializeProject(context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>) });
+      await context.database.execute(`
+        INSERT INTO projects (
+          id, name, description, long_description, technologies, github_url, live_url,
+          featured_image, visibility, featured, sort_order, github_repo, created_at, updated_at
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+        )
+      `, [
+        id, data.name, data.description, data.long_description ?? null,
+        JSON.stringify(data.technologies), data.github_url ?? null, data.live_url ?? null,
+        data.featured_image ?? null, data.visibility, data.featured ? 1 : 0, data.sort_order,
+        data.github_repo ?? null, now, now
+      ]);
+      const created = await context.database.queryOne<Record<string, unknown>>(
+        'SELECT * FROM projects WHERE id = $1',
+        [id]
+      );
+      return reply.status(201).send({ success: true, data: serializeProject(created as Record<string, unknown>) });
     },
   });
 
@@ -219,7 +248,10 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
     preValidation: [validateParams(idParamSchema), validateBody(projectSyncSchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const row = context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+      const row = await context.database.queryOne<Record<string, unknown>>(
+        'SELECT * FROM projects WHERE id = $1',
+        [id]
+      );
       if (!row) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
@@ -241,20 +273,20 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
         const now = Date.now();
         const githubUrl = row.github_url || meta.html_url;
 
-        context.database.prepare(`
+        await context.database.execute(`
           UPDATE projects SET
-            github_repo = ?,
-            github_stars = ?,
-            github_forks = ?,
-            github_language = ?,
-            github_topics = ?,
-            github_updated_at = ?,
+            github_repo = $1,
+            github_stars = $2,
+            github_forks = $3,
+            github_language = $4,
+            github_topics = $5,
+            github_updated_at = $6,
             github_sync_status = 'synced',
-            github_synced_at = ?,
-            github_url = ?,
-            updated_at = ?
-          WHERE id = ?
-        `).run(
+            github_synced_at = $7,
+            github_url = $8,
+            updated_at = $9
+          WHERE id = $10
+        `, [
           meta.repo,
           meta.stars,
           meta.forks,
@@ -265,13 +297,19 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
           githubUrl,
           now,
           id
-        );
+        ]);
 
-        const updated = context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>;
-        return reply.send({ success: true, data: serializeProject(updated) });
+        const updated = await context.database.queryOne<Record<string, unknown>>(
+          'SELECT * FROM projects WHERE id = $1',
+          [id]
+        );
+        return reply.send({ success: true, data: serializeProject(updated as Record<string, unknown>) });
       } catch (err: unknown) {
         const now = Date.now();
-        context.database.prepare("UPDATE projects SET github_sync_status = 'failed', updated_at = ? WHERE id = ?").run(now, id);
+        await context.database.execute(
+          "UPDATE projects SET github_sync_status = 'failed', updated_at = $1 WHERE id = $2",
+          [now, id]
+        );
 
         if (err instanceof GitHubSyncError) {
           return reply.status(err.statusCode).send({
@@ -300,12 +338,23 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
       if (assignments.length === 0) {
         return reply.status(400).send({ success: false, error: 'No fields to update', code: 'NO_UPDATES' });
       }
-      values.push(Date.now(), id);
-      const result = context.database.prepare(`UPDATE projects SET ${assignments.join(', ')}, updated_at = ? WHERE id = ?`).run(...values);
-      if (result.changes === 0) {
+      values.push(Date.now());
+      const updatedAtIdx = values.length;
+      values.push(id);
+      const idIdx = values.length;
+
+      const result = await context.database.execute(
+        `UPDATE projects SET ${assignments.join(', ')}, updated_at = $${updatedAtIdx} WHERE id = $${idIdx}`,
+        values
+      );
+      if (result.rowCount === 0) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
-      return { success: true, data: serializeProject(context.database.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown>) };
+      const updated = await context.database.queryOne<Record<string, unknown>>(
+        'SELECT * FROM projects WHERE id = $1',
+        [id]
+      );
+      return { success: true, data: serializeProject(updated as Record<string, unknown>) };
     },
   });
 
@@ -314,8 +363,8 @@ export async function projectAdminRoutes(fastify: FastifyInstance, context: Rout
     preValidation: [validateParams(idParamSchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const result = context.database.prepare('DELETE FROM projects WHERE id = ?').run(id);
-      if (result.changes === 0) {
+      const result = await context.database.execute('DELETE FROM projects WHERE id = $1', [id]);
+      if (result.rowCount === 0) {
         return reply.status(404).send({ success: false, error: 'Project not found', code: 'NOT_FOUND' });
       }
       return reply.send({ success: true, message: 'Project deleted' });

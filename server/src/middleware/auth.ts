@@ -17,7 +17,7 @@ export function authenticate(authService: AuthService) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const rawCookie = request.cookies?.[SESSION_COOKIE_NAME];
     const sessionId = sessionIdFromRequest(request);
-    const user = sessionId ? authService.getUserFromSession(sessionId) : null;
+    const user = sessionId ? await authService.getUserFromSession(sessionId) : null;
 
     if (!user) {
       if (rawCookie) {

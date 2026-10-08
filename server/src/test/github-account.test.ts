@@ -107,16 +107,17 @@ const mockFile = {
 describe('GitHub Account Discovery & Remote Browsing', () => {
   let app: FastifyInstance;
   let config = loadTestConfig();
-  let db = initializeDatabase(config);
+  let db: Awaited<ReturnType<typeof initializeDatabase>>;
 
   beforeAll(async () => {
+    db = await initializeDatabase(config);
     app = await buildApp({ database: db, config });
     await app.ready();
   });
 
   afterAll(async () => {
     await app.close();
-    closeDatabase(db);
+    await closeDatabase(db);
   });
 
   beforeEach(() => {
@@ -323,8 +324,9 @@ describe('GitHub Account Discovery & Remote Browsing', () => {
     expect(res.json().code).toBe('NETWORK_ERROR');
   });
 
-  it('DOES NOT create any SQLite project records when discovering repositories', async () => {
-    const beforeCount = (db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number }).count;
+  it('DOES NOT create any project records when discovering repositories', async () => {
+    const beforeRow = await db.queryOne<{ count: number }>('SELECT COUNT(*) as count FROM projects');
+    const beforeCount = beforeRow ? Number(beforeRow.count) : 0;
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       return new Response(JSON.stringify(mockReposPage1), {
@@ -336,7 +338,8 @@ describe('GitHub Account Discovery & Remote Browsing', () => {
     const res = await app.inject({ method: 'GET', url: '/api/github/repos' });
     expect(res.statusCode).toBe(200);
 
-    const afterCount = (db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number }).count;
+    const afterRow = await db.queryOne<{ count: number }>('SELECT COUNT(*) as count FROM projects');
+    const afterCount = afterRow ? Number(afterRow.count) : 0;
     expect(afterCount).toBe(beforeCount);
   });
 

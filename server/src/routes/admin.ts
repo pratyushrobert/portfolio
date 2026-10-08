@@ -4,36 +4,67 @@ import type { RouteContext } from './context.js';
 
 export async function adminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
   const allowedTables = new Set(['projects', 'skills', 'experience', 'certificates', 'assets']);
+
   fastify.get('/dashboard', { preHandler: [authenticate(context.authService)] }, async () => {
-    const count = (table: string): number => {
+    const count = async (table: string): Promise<number> => {
       if (!allowedTables.has(table)) {
         throw new Error(`Invalid table: ${table}`);
       }
-      const row = context.database.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number };
-      return row.count;
+      const row = await context.database.queryOne<{ count: number }>(`SELECT COUNT(*) AS count FROM ${table}`);
+      return row ? Number(row.count) : 0;
     };
 
-    const countQuery = (sql: string): number => {
-      const row = context.database.prepare(sql).get() as { count: number };
-      return row ? row.count : 0;
+    const countQuery = async (sql: string, params: unknown[] = []): Promise<number> => {
+      const row = await context.database.queryOne<{ count: number }>(sql, params);
+      return row ? Number(row.count) : 0;
     };
+
+    const [
+      projects,
+      projects_public,
+      projects_featured,
+      skills,
+      skills_public,
+      experience,
+      experience_public,
+      certificates,
+      certificates_public,
+      assets,
+      active_sessions,
+      github_linked_projects,
+      github_synced_projects,
+    ] = await Promise.all([
+      count('projects'),
+      countQuery("SELECT COUNT(*) AS count FROM projects WHERE visibility = 'public'"),
+      countQuery('SELECT COUNT(*) AS count FROM projects WHERE featured = 1'),
+      count('skills'),
+      countQuery('SELECT COUNT(*) AS count FROM skills WHERE visibility = 1'),
+      count('experience'),
+      countQuery('SELECT COUNT(*) AS count FROM experience WHERE visibility = 1'),
+      count('certificates'),
+      countQuery('SELECT COUNT(*) AS count FROM certificates WHERE visibility = 1'),
+      count('assets'),
+      countQuery('SELECT COUNT(*) AS count FROM sessions WHERE expires_at > $1', [Date.now()]),
+      countQuery("SELECT COUNT(*) AS count FROM projects WHERE github_repo IS NOT NULL AND trim(github_repo) != ''"),
+      countQuery("SELECT COUNT(*) AS count FROM projects WHERE github_sync_status = 'synced'"),
+    ]);
 
     return {
       success: true,
       data: {
-        projects: count('projects'),
-        projects_public: countQuery("SELECT COUNT(*) AS count FROM projects WHERE visibility = 'public'"),
-        projects_featured: countQuery("SELECT COUNT(*) AS count FROM projects WHERE featured = 1"),
-        skills: count('skills'),
-        skills_public: countQuery("SELECT COUNT(*) AS count FROM skills WHERE visibility = 1"),
-        experience: count('experience'),
-        experience_public: countQuery("SELECT COUNT(*) AS count FROM experience WHERE visibility = 1"),
-        certificates: count('certificates'),
-        certificates_public: countQuery("SELECT COUNT(*) AS count FROM certificates WHERE visibility = 1"),
-        assets: count('assets'),
-        active_sessions: countQuery(`SELECT COUNT(*) AS count FROM sessions WHERE expires_at > ${Date.now()}`),
-        github_linked_projects: countQuery("SELECT COUNT(*) AS count FROM projects WHERE github_repo IS NOT NULL AND trim(github_repo) != ''"),
-        github_synced_projects: countQuery("SELECT COUNT(*) AS count FROM projects WHERE github_sync_status = 'synced'"),
+        projects,
+        projects_public,
+        projects_featured,
+        skills,
+        skills_public,
+        experience,
+        experience_public,
+        certificates,
+        certificates_public,
+        assets,
+        active_sessions,
+        github_linked_projects,
+        github_synced_projects,
         github_username: context.config.GITHUB_USERNAME,
       },
     };

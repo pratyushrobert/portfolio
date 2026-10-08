@@ -100,8 +100,8 @@ async function main(): Promise<void> {
   const config = loadConfig({ ...process.env, ADMIN_PASSWORD: password });
   await updateLocalEnvironment(password);
 
-  const database = initializeDatabase(config);
-  closeDatabase(database);
+  const database = await initializeDatabase(config);
+  await closeDatabase(database);
   console.log(`Admin password reset for ${config.ADMIN_EMAIL}.`);
 }
 

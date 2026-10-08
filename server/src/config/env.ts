@@ -7,8 +7,13 @@ export const serverRoot = fileURLToPath(new URL('../../', import.meta.url));
 
 const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  HOST: z.string().min(1).default('127.0.0.1'),
+  HOST: z.string().min(1).default('0.0.0.0'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
+  DATABASE_URL: z.string().trim().optional().default(''),
+  DIRECT_URL: z.string().trim().optional().default(''),
+  SUPABASE_URL: z.string().trim().optional().default(''),
+  SUPABASE_SECRET_KEY: z.string().trim().optional().default(''),
+  SUPABASE_STORAGE_BUCKET: z.string().trim().default('mimios-assets'),
   DATABASE_PATH: z.string().min(1).default('./data/mimios.db'),
   ADMIN_EMAIL: z.string().trim().email().max(254).transform((email) => email.toLowerCase()),
   ADMIN_PASSWORD: z.string().min(12).refine((value) => Buffer.byteLength(value) <= 72, 'Password must be at most 72 UTF-8 bytes')
@@ -35,8 +40,10 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): RuntimeConf
   if (!parsed.success) {
     throw new Error(`Invalid server environment: ${parsed.error.issues.map((issue) => issue.path.join('.')).join(', ')}`);
   }
+  const dbUrl = parsed.data.DATABASE_URL || parsed.data.DIRECT_URL || '';
   return {
     ...parsed.data,
+    DATABASE_URL: dbUrl,
     DATABASE_PATH: parsed.data.DATABASE_PATH === ':memory:' ? ':memory:' : resolve(serverRoot, parsed.data.DATABASE_PATH),
     UPLOAD_DIR: resolve(serverRoot, parsed.data.UPLOAD_DIR),
   };

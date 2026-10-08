@@ -11,7 +11,7 @@ export async function authRoutes(fastify: FastifyInstance, context: RouteContext
     preValidation: [validateBody(loginSchema)],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       const { email, password } = request.body as { email: string; password: string };
-      const user = context.authService.verifyCredentials(email, password);
+      const user = await context.authService.verifyCredentials(email, password);
 
       if (!user) {
         return reply.status(401).send({
@@ -21,8 +21,8 @@ export async function authRoutes(fastify: FastifyInstance, context: RouteContext
         });
       }
 
-      context.authService.deleteExpiredSessions();
-      const session = context.authService.createSession(user.id);
+      await context.authService.deleteExpiredSessions();
+      const session = await context.authService.createSession(user.id);
       reply.setCookie(SESSION_COOKIE_NAME, session.id, {
         httpOnly: true,
         signed: true,
@@ -41,7 +41,7 @@ export async function authRoutes(fastify: FastifyInstance, context: RouteContext
     if (rawCookie) {
       const unsigned = request.unsignCookie(rawCookie);
       if (unsigned.valid) {
-        context.authService.deleteSession(unsigned.value);
+        await context.authService.deleteSession(unsigned.value);
       }
     }
 
@@ -53,7 +53,7 @@ export async function authRoutes(fastify: FastifyInstance, context: RouteContext
     preHandler: [async (request, reply) => {
       const rawCookie = request.cookies?.[SESSION_COOKIE_NAME];
       const unsigned = rawCookie ? request.unsignCookie(rawCookie) : { valid: false as const, value: '' };
-      const user = unsigned.valid ? context.authService.getUserFromSession(unsigned.value) : null;
+      const user = unsigned.valid ? await context.authService.getUserFromSession(unsigned.value) : null;
       if (!user) {
         await reply.status(401).send({
           success: false,

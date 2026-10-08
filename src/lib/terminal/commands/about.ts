@@ -10,7 +10,7 @@ Engineered by Pratyush Robert
 
 Core Architecture:
 - Frontend: React 19, TypeScript, Zustand, xterm.js
-- Backend:  Fastify 5, SQLite (mimios.db), Bcrypt Auth
+- Backend:  Fastify 5, PostgreSQL (Supabase), Bcrypt Auth
 - Storage:  POSIX-compliant in-browser VirtualFS & Remote GitHub Browser
 
 Features:

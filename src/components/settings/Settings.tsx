@@ -633,7 +633,7 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
                   <div className="settings-info-value">Fastify 5 • Node.js Engine (ESM)</div>
 
                   <div className="settings-info-label">Database Engine:</div>
-                  <div className="settings-info-value">SQLite 3 (better-sqlite3) • WAL Mode</div>
+                  <div className="settings-info-value">PostgreSQL 17 (Supabase) • Connection Pool</div>
 
                   <div className="settings-info-label">File System Layer:</div>
                   <div className="settings-info-value">POSIX VirtualFS (Reactive In-Memory)</div>

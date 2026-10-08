@@ -24,8 +24,8 @@ function updateValues(body: Record<string, unknown>): { assignments: string[]; v
   const values: unknown[] = [];
   for (const [key, value] of Object.entries(body)) {
     if (allowed.has(key)) {
-      assignments.push(`${key} = ?`);
       values.push(key === 'technologies' ? JSON.stringify(value) : key === 'visibility' ? (value ? 1 : 0) : value);
+      assignments.push(`${key} = $${values.length}`);
     }
   }
   return { assignments, values };
@@ -33,7 +33,9 @@ function updateValues(body: Record<string, unknown>): { assignments: string[]; v
 
 export async function experienceRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
   fastify.get('/', async () => {
-    const rows = context.database.prepare('SELECT * FROM experience WHERE visibility = 1 ORDER BY sort_order, start_date DESC').all() as Array<Record<string, unknown>>;
+    const rows = await context.database.queryAll<Record<string, unknown>>(
+      'SELECT * FROM experience WHERE visibility = 1 ORDER BY sort_order, start_date DESC'
+    );
     return { success: true, data: rows.map(publicExperience) };
   });
 }
@@ -41,7 +43,9 @@ export async function experienceRoutes(fastify: FastifyInstance, context: RouteC
 export async function experienceAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
   const admin = authenticate(context.authService);
   fastify.get('/', { preHandler: [admin] }, async () => {
-    const rows = context.database.prepare('SELECT * FROM experience ORDER BY sort_order, start_date DESC').all() as Array<Record<string, unknown>>;
+    const rows = await context.database.queryAll<Record<string, unknown>>(
+      'SELECT * FROM experience ORDER BY sort_order, start_date DESC'
+    );
     return { success: true, data: rows.map(publicExperience) };
   });
 
@@ -52,12 +56,13 @@ export async function experienceAdminRoutes(fastify: FastifyInstance, context: R
       const data = request.body as ExperienceInput;
       const id = randomUUID();
       const now = Date.now();
-      context.database.prepare(`
+      await context.database.execute(`
         INSERT INTO experience (id, organization, role, start_date, end_date, description, technologies, link, sort_order, visibility, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(id, data.organization, data.role, data.start_date, data.end_date ?? null, data.description, JSON.stringify(data.technologies), data.link ?? null,
-        data.sort_order, data.visibility ? 1 : 0, now, now);
-      return reply.status(201).send({ success: true, data: publicExperience(context.database.prepare('SELECT * FROM experience WHERE id = ?').get(id) as Record<string, unknown>) });
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `, [id, data.organization, data.role, data.start_date, data.end_date ?? null, data.description, JSON.stringify(data.technologies), data.link ?? null,
+        data.sort_order, data.visibility ? 1 : 0, now, now]);
+      const created = await context.database.queryOne<Record<string, unknown>>('SELECT * FROM experience WHERE id = $1', [id]);
+      return reply.status(201).send({ success: true, data: publicExperience(created as Record<string, unknown>) });
     },
   });
 
@@ -70,12 +75,20 @@ export async function experienceAdminRoutes(fastify: FastifyInstance, context: R
       if (assignments.length === 0) {
         return reply.status(400).send({ success: false, error: 'No fields to update', code: 'NO_UPDATES' });
       }
-      values.push(Date.now(), id);
-      const result = context.database.prepare(`UPDATE experience SET ${assignments.join(', ')}, updated_at = ? WHERE id = ?`).run(...values);
-      if (result.changes === 0) {
+      values.push(Date.now());
+      const updatedAtIdx = values.length;
+      values.push(id);
+      const idIdx = values.length;
+
+      const result = await context.database.execute(
+        `UPDATE experience SET ${assignments.join(', ')}, updated_at = $${updatedAtIdx} WHERE id = $${idIdx}`,
+        values
+      );
+      if (result.rowCount === 0) {
         return reply.status(404).send({ success: false, error: 'Experience not found', code: 'NOT_FOUND' });
       }
-      return { success: true, data: publicExperience(context.database.prepare('SELECT * FROM experience WHERE id = ?').get(id) as Record<string, unknown>) };
+      const updated = await context.database.queryOne<Record<string, unknown>>('SELECT * FROM experience WHERE id = $1', [id]);
+      return { success: true, data: publicExperience(updated as Record<string, unknown>) };
     },
   });
 
@@ -84,8 +97,8 @@ export async function experienceAdminRoutes(fastify: FastifyInstance, context: R
     preValidation: [validateParams(idParamSchema)],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const result = context.database.prepare('DELETE FROM experience WHERE id = ?').run(id);
-      if (result.changes === 0) {
+      const result = await context.database.execute('DELETE FROM experience WHERE id = $1', [id]);
+      if (result.rowCount === 0) {
         return reply.status(404).send({ success: false, error: 'Experience not found', code: 'NOT_FOUND' });
       }
       return reply.send({ success: true, message: 'Experience deleted' });
