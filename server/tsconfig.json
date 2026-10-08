@@ -12,7 +12,8 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node", "bcryptjs", "pg"]
   },
   "include": ["src/**/*.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
