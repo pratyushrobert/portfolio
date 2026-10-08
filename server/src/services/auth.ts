@@ -6,6 +6,26 @@ import type { AuthUser, Session } from '../types/index.js';
 export const SESSION_COOKIE_NAME = 'mimios_session';
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
+export interface SessionCookieConfig {
+  NODE_ENV: string;
+  COOKIE_SAME_SITE?: 'lax' | 'none' | 'strict';
+  COOKIE_SECURE?: boolean;
+}
+
+export function getSessionCookieOptions(config: SessionCookieConfig) {
+  const isProduction = config.NODE_ENV === 'production';
+  const sameSite: 'none' | 'lax' | 'strict' = config.COOKIE_SAME_SITE ?? (isProduction ? 'none' : 'lax');
+  const secure: boolean = sameSite === 'none' ? true : (config.COOKIE_SECURE ?? isProduction);
+
+  return {
+    httpOnly: true,
+    signed: true,
+    path: '/',
+    secure,
+    sameSite,
+  };
+}
+
 type StoredUser = AuthUser & { password_hash: string };
 
 export interface AuthService {

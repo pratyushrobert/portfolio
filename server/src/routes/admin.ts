@@ -5,7 +5,7 @@ import type { RouteContext } from './context.js';
 export async function adminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
   const allowedTables = new Set(['projects', 'skills', 'experience', 'certificates', 'assets']);
 
-  fastify.get('/dashboard', { preHandler: [authenticate(context.authService)] }, async () => {
+  fastify.get('/dashboard', { preHandler: [authenticate(context.authService, context.config)] }, async () => {
     const count = async (table: string): Promise<number> => {
       if (!allowedTables.has(table)) {
         throw new Error(`Invalid table: ${table}`);

@@ -190,7 +190,7 @@ export async function projectRoutes(fastify: FastifyInstance, context: RouteCont
 }
 
 export async function projectAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
-  const admin = authenticate(context.authService);
+  const admin = authenticate(context.authService, context.config);
 
   fastify.get('/', { preHandler: [admin] }, async () => {
     const rows = await context.database.queryAll<Record<string, unknown>>(

@@ -30,13 +30,15 @@ export async function portfolioRoutes(fastify: FastifyInstance, context: RouteCo
 }
 
 export async function portfolioAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
-  fastify.get('/', { preHandler: [authenticate(context.authService)] }, async () => {
+  const admin = authenticate(context.authService, context.config);
+
+  fastify.get('/', { preHandler: [admin] }, async () => {
     const rows = await context.database.queryAll('SELECT * FROM portfolio_content ORDER BY key');
     return { success: true, data: rows };
   });
 
   fastify.patch('/', {
-    preHandler: [authenticate(context.authService)],
+    preHandler: [admin],
     preValidation: [validateBody(portfolioPatchSchema)],
     handler: async (request, reply) => {
       const { key, content } = request.body as { key: string; content: string };
@@ -52,7 +54,7 @@ export async function portfolioAdminRoutes(fastify: FastifyInstance, context: Ro
   });
 
   fastify.patch('/:key', {
-    preHandler: [authenticate(context.authService)],
+    preHandler: [admin],
     preValidation: [validateParams(keyParamSchema), validateBody(portfolioPatchSchema.omit({ key: true }))],
     handler: async (request, reply) => {
       const { key } = request.params as { key: string };

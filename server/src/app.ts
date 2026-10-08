@@ -46,11 +46,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     bodyLimit: config.UPLOAD_MAX_SIZE + 1024 * 1024,
   });
 
-  const allowedOrigins = new Set(config.CORS_ORIGIN.split(',').map((origin) => origin.trim()));
+  const allowedOrigins = new Set(
+    config.CORS_ORIGIN.split(',')
+      .map((origin) => origin.trim().replace(/\/+$/, ''))
+      .filter(Boolean)
+  );
 
   fastify.addHook('onRequest', async (request, reply) => {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
-      const origin = request.headers.origin;
+      const origin = request.headers.origin?.trim().replace(/\/+$/, '');
       if (origin && !allowedOrigins.has(origin)) {
         return reply.status(403).send({
           success: false,

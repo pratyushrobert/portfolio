@@ -2,10 +2,12 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { loginSchema } from '../schemas/index.js';
 import { validateBody } from '../middleware/validation.js';
 import { getAuthenticatedUser } from '../middleware/auth.js';
-import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from '../services/auth.js';
+import { SESSION_COOKIE_NAME, SESSION_TTL_MS, getSessionCookieOptions } from '../services/auth.js';
 import type { RouteContext } from './context.js';
 
 export async function authRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
+  const cookieOptions = getSessionCookieOptions(context.config);
+
   fastify.post('/login', {
     config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
     preValidation: [validateBody(loginSchema)],
@@ -24,11 +26,7 @@ export async function authRoutes(fastify: FastifyInstance, context: RouteContext
       await context.authService.deleteExpiredSessions();
       const session = await context.authService.createSession(user.id);
       reply.setCookie(SESSION_COOKIE_NAME, session.id, {
-        httpOnly: true,
-        signed: true,
-        secure: context.config.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
+        ...cookieOptions,
         maxAge: SESSION_TTL_MS / 1000,
       });
 
@@ -45,7 +43,7 @@ export async function authRoutes(fastify: FastifyInstance, context: RouteContext
       }
     }
 
-    reply.clearCookie(SESSION_COOKIE_NAME, { path: '/', signed: true });
+    reply.clearCookie(SESSION_COOKIE_NAME, cookieOptions);
     return reply.send({ success: true, message: 'Logged out successfully' });
   });
 

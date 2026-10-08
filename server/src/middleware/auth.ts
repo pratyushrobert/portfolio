@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { AuthService } from '../services/auth.js';
-import { SESSION_COOKIE_NAME } from '../services/auth.js';
+import type { AuthService, SessionCookieConfig } from '../services/auth.js';
+import { SESSION_COOKIE_NAME, getSessionCookieOptions } from '../services/auth.js';
 import type { AuthenticatedRequest } from '../types/index.js';
 
 function sessionIdFromRequest(request: FastifyRequest): string | null {
@@ -13,7 +13,7 @@ function sessionIdFromRequest(request: FastifyRequest): string | null {
   return unsigned.valid ? unsigned.value : null;
 }
 
-export function authenticate(authService: AuthService) {
+export function authenticate(authService: AuthService, cookieConfig?: SessionCookieConfig) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const rawCookie = request.cookies?.[SESSION_COOKIE_NAME];
     const sessionId = sessionIdFromRequest(request);
@@ -21,7 +21,8 @@ export function authenticate(authService: AuthService) {
 
     if (!user) {
       if (rawCookie) {
-        reply.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
+        const options = cookieConfig ? getSessionCookieOptions(cookieConfig) : { path: '/', signed: true };
+        reply.clearCookie(SESSION_COOKIE_NAME, options);
       }
       await reply.status(401).send({
         success: false,

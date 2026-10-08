@@ -19,6 +19,8 @@ const configSchema = z.object({
   ADMIN_PASSWORD: z.string().min(12).refine((value) => Buffer.byteLength(value) <= 72, 'Password must be at most 72 UTF-8 bytes')
     .refine((value) => !value.startsWith('replace-'), 'Replace the example password'),
   SESSION_SECRET: z.string().min(32).max(512).refine((value) => !value.startsWith('replace-'), 'Replace the example secret'),
+  COOKIE_SAME_SITE: z.enum(['lax', 'none', 'strict']).optional(),
+  COOKIE_SECURE: z.coerce.boolean().optional(),
   CORS_ORIGIN: z.string().default('http://localhost:5173').refine((value) => value.split(',').every((origin) => {
     try {
       const url = new URL(origin.trim());

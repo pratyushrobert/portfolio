@@ -37,7 +37,7 @@ export async function skillRoutes(fastify: FastifyInstance, context: RouteContex
 }
 
 export async function skillAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
-  const admin = authenticate(context.authService);
+  const admin = authenticate(context.authService, context.config);
   fastify.get('/', { preHandler: [admin] }, async () => {
     const rows = await context.database.queryAll<Record<string, unknown>>(
       'SELECT * FROM skills ORDER BY category, sort_order, name'

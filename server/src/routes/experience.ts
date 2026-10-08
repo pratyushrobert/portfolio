@@ -41,7 +41,7 @@ export async function experienceRoutes(fastify: FastifyInstance, context: RouteC
 }
 
 export async function experienceAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
-  const admin = authenticate(context.authService);
+  const admin = authenticate(context.authService, context.config);
   fastify.get('/', { preHandler: [admin] }, async () => {
     const rows = await context.database.queryAll<Record<string, unknown>>(
       'SELECT * FROM experience ORDER BY sort_order, start_date DESC'

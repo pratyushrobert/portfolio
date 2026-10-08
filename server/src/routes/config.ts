@@ -29,13 +29,15 @@ export async function configRoutes(fastify: FastifyInstance, context: RouteConte
 }
 
 export async function configAdminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
-  fastify.get('/', { preHandler: [authenticate(context.authService)] }, async () => {
+  const admin = authenticate(context.authService, context.config);
+
+  fastify.get('/', { preHandler: [admin] }, async () => {
     const rows = await context.database.queryAll('SELECT * FROM site_config ORDER BY key');
     return { success: true, data: rows };
   });
 
   fastify.patch('/', {
-    preHandler: [authenticate(context.authService)],
+    preHandler: [admin],
     preValidation: [validateBody(configPatchSchema)],
     handler: async (request, reply) => {
       const now = Date.now();
@@ -65,7 +67,7 @@ export async function configAdminRoutes(fastify: FastifyInstance, context: Route
   });
 
   fastify.patch('/:key', {
-    preHandler: [authenticate(context.authService)],
+    preHandler: [admin],
     preValidation: [validateParams(configKeySchema), validateBody(configSinglePatchSchema.omit({ key: true }))],
     handler: async (request, reply) => {
       const { key } = request.params as { key: string };

@@ -107,6 +107,8 @@ This document provides step-by-step instructions for deploying MimiOS to **Rende
 | `SUPABASE_SECRET_KEY` | `sbp_...` or service role key | Secret key for storage management |
 | `SUPABASE_STORAGE_BUCKET`| `mimios-assets` | Target storage bucket |
 | `SESSION_SECRET` | `[generate 64-character random string]` | Secret for Fastify cookie signature |
+| `COOKIE_SAME_SITE` | `none` | Required for cross-origin authentication (`mimios.onrender.com` -> `mimios-api.onrender.com`) |
+| `COOKIE_SECURE` | `true` | Required for HTTPS and `SameSite=None` |
 | `ADMIN_EMAIL` | `admin@mimios.local` | Primary administrator account |
 | `ADMIN_PASSWORD` | `[generate strong password >= 12 chars]` | Bcrypt hashed at startup |
 | `CORS_ORIGIN` | `https://mimios.onrender.com,http://localhost:5173` | Comma-separated allowed frontend origins |
