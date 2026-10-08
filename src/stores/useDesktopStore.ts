@@ -164,8 +164,15 @@ export function sanitizeIconGrid(
   return sanitized;
 }
 
+function applyGlassBlurProperty(blur: number): void {
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--glass-blur-radius', `${blur}px`);
+  }
+}
+
 type DesktopStore = DesktopState & {
   setWallpaper: (wallpaper: string) => void;
+  setGlassBlur: (glassBlur: number) => void;
   setBackgroundConfig: (config: {
     wallpaper?: string;
     wallpaperPosition?: string;
@@ -174,6 +181,7 @@ type DesktopStore = DesktopState & {
     wallpaperColor?: string;
     wallpaperBrightness?: number;
     wallpaperOverlayOpacity?: number;
+    glassBlur?: number;
   }) => void;
   setIcons: (icons: DesktopIcon[]) => void;
   addIcon: (icon: DesktopIcon) => void;
@@ -211,6 +219,7 @@ export const useDesktopStore = create<DesktopStore>()(
       wallpaperColor: '#08090d',
       wallpaperBrightness: 100,
       wallpaperOverlayOpacity: 30,
+      glassBlur: 5,
       icons: DEFAULT_ICONS,
       panelPosition: 'top' as PanelPosition,
       panelStyle: 'floating' as PanelStyle,
@@ -222,6 +231,11 @@ export const useDesktopStore = create<DesktopStore>()(
       airplaneMode: false,
 
       setWallpaper: (wallpaper: string) => set({ wallpaper }),
+      setGlassBlur: (glassBlur: number) => {
+        const normalized = Math.min(30, Math.max(0, isNaN(glassBlur) ? 5 : glassBlur));
+        applyGlassBlurProperty(normalized);
+        set({ glassBlur: normalized });
+      },
       setWallpaperBrightness: (wallpaperBrightness: number) => set({ wallpaperBrightness }),
       setSystemVolume: (systemVolume: number) => set({ systemVolume, systemMuted: false }),
       toggleSystemMute: () => set(state => ({ systemMuted: !state.systemMuted })),
@@ -250,8 +264,12 @@ export const useDesktopStore = create<DesktopStore>()(
             bluetoothEnabled: true,
           };
         }),
-      setBackgroundConfig: (config) =>
-        set((state) => ({
+      setBackgroundConfig: (config) => {
+        if (config.glassBlur !== undefined) {
+          const normalized = Math.min(30, Math.max(0, isNaN(config.glassBlur) ? 5 : config.glassBlur));
+          applyGlassBlurProperty(normalized);
+        }
+        return set((state) => ({
           wallpaper: config.wallpaper !== undefined ? config.wallpaper : state.wallpaper,
           wallpaperPosition: config.wallpaperPosition !== undefined ? config.wallpaperPosition : state.wallpaperPosition,
           wallpaperSize: config.wallpaperSize !== undefined ? config.wallpaperSize : state.wallpaperSize,
@@ -259,7 +277,9 @@ export const useDesktopStore = create<DesktopStore>()(
           wallpaperColor: config.wallpaperColor !== undefined && config.wallpaperColor !== '#1a1a2e' ? config.wallpaperColor : (state.wallpaperColor === '#1a1a2e' ? '#08090d' : state.wallpaperColor),
           wallpaperBrightness: config.wallpaperBrightness !== undefined ? config.wallpaperBrightness : (state.wallpaperBrightness ?? 100),
           wallpaperOverlayOpacity: config.wallpaperOverlayOpacity !== undefined ? config.wallpaperOverlayOpacity : (state.wallpaperOverlayOpacity ?? 30),
-        })),
+          glassBlur: config.glassBlur !== undefined ? Math.min(30, Math.max(0, isNaN(config.glassBlur) ? 5 : config.glassBlur)) : (state.glassBlur ?? 5),
+        }));
+      },
       setIcons: (icons: DesktopIcon[]) => set({ icons }),
       addIcon: (icon: DesktopIcon) => set({ icons: [...get().icons, icon] }),
       removeIcon: (id: string) => set({ icons: get().icons.filter(i => i.id !== id) }),

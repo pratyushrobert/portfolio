@@ -84,7 +84,8 @@
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--panel-bg, rgba(255, 255, 255, 0.8));
-  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   flex-wrap: wrap;
   gap: 8px;
   flex-shrink: 0;

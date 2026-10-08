@@ -224,41 +224,43 @@ export function ProjectsApp({ windowId, onOpenRequest }: ProjectsAppProps) {
 
               return (
                 <div key={p.id} className="project-card" onClick={() => handleOpenProjectViewer(p)}>
-                  <div className="project-card-header">
-                    <div className="project-card-title-group">
-                      <FolderGit2 size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                      <h3 className="project-card-title">{p.name}</h3>
+                  <div className="project-card-content">
+                    <div className="project-card-header">
+                      <div className="project-card-title-group">
+                        <FolderGit2 size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        <h3 className="project-card-title">{p.name}</h3>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {p.featured && (
+                          <span className="portfolio-badge badge-featured">
+                            <Star size={11} fill="currentColor" /> Featured
+                          </span>
+                        )}
+                        {p.github_language && (
+                          <span className="portfolio-badge badge-lang">
+                            <Code2 size={11} /> {p.github_language}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {p.featured && (
-                        <span className="portfolio-badge badge-featured">
-                          <Star size={11} fill="currentColor" /> Featured
-                        </span>
-                      )}
-                      {p.github_language && (
-                        <span className="portfolio-badge badge-lang">
-                          <Code2 size={11} /> {p.github_language}
-                        </span>
-                      )}
-                    </div>
+
+                    <p className="project-card-desc">{p.description}</p>
+
+                    {p.technologies && p.technologies.length > 0 && (
+                      <div className="project-card-tech">
+                        {p.technologies.slice(0, 4).map((tech) => (
+                          <span key={tech} className="tech-tag">
+                            {tech}
+                          </span>
+                        ))}
+                        {p.technologies.length > 4 && (
+                          <span className="tech-tag" style={{ opacity: 0.7 }}>
+                            +{p.technologies.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  <p className="project-card-desc">{p.description}</p>
-
-                  {p.technologies && p.technologies.length > 0 && (
-                    <div className="project-card-tech">
-                      {p.technologies.slice(0, 4).map((tech) => (
-                        <span key={tech} className="tech-tag">
-                          {tech}
-                        </span>
-                      ))}
-                      {p.technologies.length > 4 && (
-                        <span className="tech-tag" style={{ opacity: 0.7 }}>
-                          +{p.technologies.length - 4}
-                        </span>
-                      )}
-                    </div>
-                  )}
 
                   <div className="project-card-footer">
                     <div className="project-card-meta">
@@ -278,13 +280,12 @@ export function ProjectsApp({ windowId, onOpenRequest }: ProjectsAppProps) {
                     <div className="project-card-actions">
                       {p.github_repo && (
                         <button
-                          className="portfolio-btn"
+                          className="portfolio-btn portfolio-btn-browse"
                           onClick={(e) => handleBrowseInFiles(p, e)}
                           title="Browse repository in MimiOS File Manager"
-                          style={{ padding: '3px 8px', fontSize: '11px' }}
                         >
                           <FolderOpen size={12} />
-                          <span>Files</span>
+                          <span>Browse</span>
                         </button>
                       )}
                       {githubUrl && isValidUrl(githubUrl) && (
@@ -292,10 +293,9 @@ export function ProjectsApp({ windowId, onOpenRequest }: ProjectsAppProps) {
                           href={githubUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="portfolio-btn"
+                          className="portfolio-btn portfolio-btn-github"
                           onClick={(e) => e.stopPropagation()}
                           title="Open on GitHub"
-                          style={{ padding: '3px 8px', fontSize: '11px' }}
                         >
                           <ExternalLink size={12} />
                           <span>GitHub</span>
@@ -309,17 +309,15 @@ export function ProjectsApp({ windowId, onOpenRequest }: ProjectsAppProps) {
                           className="portfolio-btn portfolio-btn-primary"
                           onClick={(e) => e.stopPropagation()}
                           title="Live Demo"
-                          style={{ padding: '3px 8px', fontSize: '11px' }}
                         >
                           <ExternalLink size={12} />
                           <span>Demo</span>
                         </a>
                       )}
                       <button
-                        className="portfolio-btn"
+                        className="portfolio-btn portfolio-btn-icon-only"
                         onClick={() => handleOpenProjectViewer(p)}
                         title="View details"
-                        style={{ padding: '3px 8px', fontSize: '11px' }}
                       >
                         <Eye size={12} />
                       </button>

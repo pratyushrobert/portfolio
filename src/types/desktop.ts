@@ -36,6 +36,7 @@ export interface DesktopState {
   wallpaperColor?: string;
   wallpaperBrightness?: number;
   wallpaperOverlayOpacity?: number;
+  glassBlur?: number;
   icons: DesktopIcon[];
   panelPosition: PanelPosition;
   panelStyle?: PanelStyle;

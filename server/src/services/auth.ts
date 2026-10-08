@@ -34,6 +34,7 @@ export interface AuthService {
   getUserFromSession(sessionId: string): Promise<AuthUser | null>;
   deleteSession(sessionId: string): Promise<void>;
   deleteExpiredSessions(): Promise<void>;
+  deleteAllAdminSessions(): Promise<number>;
 }
 
 // Constant-time dummy hash to prevent email enumeration via timing side-channels
@@ -98,6 +99,16 @@ export function createAuthService(database: AppDatabase): AuthService {
 
     async deleteExpiredSessions() {
       await database.execute('DELETE FROM sessions WHERE expires_at <= $1', [Date.now()]);
+    },
+
+    async deleteAllAdminSessions() {
+      const result = await database.execute(`
+        DELETE FROM sessions
+        WHERE user_id IN (
+          SELECT id FROM users WHERE role = $1
+        )
+      `, ['admin']);
+      return result.rowCount;
     },
   };
 }

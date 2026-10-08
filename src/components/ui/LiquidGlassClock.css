@@ -38,8 +38,8 @@
   width: 124%;
   height: 105%;
   border-radius: 40px;
-  backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
-  -webkit-backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   pointer-events: none;
   z-index: 1;
   -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, #000 35%, transparent 100%);

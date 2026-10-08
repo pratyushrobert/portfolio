@@ -4,6 +4,9 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    cssTarget: ['chrome100', 'safari15', 'firefox100', 'edge100'],
+  },
   server: {
     proxy: {
       '/api': {

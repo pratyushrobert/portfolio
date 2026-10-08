@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../middleware/auth.js';
+import { SESSION_COOKIE_NAME, getSessionCookieOptions } from '../services/auth.js';
 import type { RouteContext } from './context.js';
 
 export async function adminRoutes(fastify: FastifyInstance, context: RouteContext): Promise<void> {
@@ -68,5 +69,18 @@ export async function adminRoutes(fastify: FastifyInstance, context: RouteContex
         github_username: context.config.GITHUB_USERNAME,
       },
     };
+  });
+
+  fastify.post('/sessions/logout-all', {
+    preHandler: [authenticate(context.authService, context.config)],
+  }, async (_request, reply) => {
+    const invalidatedCount = await context.authService.deleteAllAdminSessions();
+    const cookieOptions = getSessionCookieOptions(context.config);
+    reply.clearCookie(SESSION_COOKIE_NAME, cookieOptions);
+    return reply.send({
+      success: true,
+      data: { invalidated_sessions: invalidatedCount },
+      message: 'All admin sessions invalidated successfully',
+    });
   });
 }

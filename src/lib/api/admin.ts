@@ -19,4 +19,5 @@ export interface AdminDashboardData {
 
 export const adminApi = {
   dashboard: () => request<AdminDashboardData>('/api/admin/dashboard'),
+  logoutAllSessions: () => request<{ invalidated_sessions: number }>('/api/admin/sessions/logout-all', { method: 'POST' }),
 };

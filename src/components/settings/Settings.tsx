@@ -78,6 +78,7 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
   const wallpaperSize = useDesktopStore(state => state.wallpaperSize) || 'cover';
   const wallpaperOverlay = useDesktopStore(state => state.wallpaperOverlay) || '';
   const wallpaperColor = useDesktopStore(state => state.wallpaperColor) || '#08090d';
+  const glassBlur = useDesktopStore(state => state.glassBlur ?? 5);
   const panelPosition = useDesktopStore(state => state.panelPosition);
   const panelStyle = useDesktopStore(state => state.panelStyle ?? 'floating');
   const showPanel = useDesktopStore(state => state.showPanel);
@@ -172,6 +173,12 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
     setSaveSuccessMessage(null);
   };
 
+  const handleSetGlassBlur = (blurVal: number) => {
+    const normalized = Math.min(30, Math.max(0, isNaN(blurVal) ? 5 : blurVal));
+    setBackgroundConfig({ glassBlur: normalized });
+    setSaveSuccessMessage(null);
+  };
+
   // Authoritative Save (Admins only)
   const handleSaveGlobal = async () => {
     if (!isAdmin) return;
@@ -185,8 +192,9 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
         { key: 'wallpaper_size', value: wallpaperSize, description: 'Wallpaper size' },
         { key: 'wallpaper_overlay', value: wallpaperOverlay, description: 'Wallpaper overlay' },
         { key: 'wallpaper_color', value: wallpaperColor, description: 'Wallpaper fallback color' },
+        { key: 'glass_blur', value: String(glassBlur), description: 'Global glass blur radius in pixels (0-30)' },
       ]);
-      setSaveSuccessMessage('Wallpaper configuration saved permanently to backend database.');
+      setSaveSuccessMessage('Wallpaper and glass appearance saved permanently to backend database.');
     } catch (err) {
       setSaveErrorMessage(getApiErrorMessage(err));
     } finally {
@@ -202,6 +210,7 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
       wallpaperSize: 'cover',
       wallpaperOverlay: 'rgba(0, 0, 0, 0.3)',
       wallpaperColor: '#08090d',
+      glassBlur: 5,
     });
     setCustomImageUrl('');
     setSaveSuccessMessage('Reset to OS defaults in current session.');
@@ -468,6 +477,28 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Global Glass Blur */}
+                <div className="settings-row">
+                  <div className="settings-row-label">
+                    <span>Global Glass Blur</span>
+                    <span>Frosted backdrop blur radius across all windows, dock, and panels (0–30px, default 5px)</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 200 }}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="30"
+                      step="1"
+                      value={glassBlur}
+                      onChange={e => handleSetGlassBlur(Number(e.target.value))}
+                      style={{ flex: 1, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--text-h)', minWidth: 36, textAlign: 'right' }}>
+                      {glassBlur}px
+                    </span>
+                  </div>
                 </div>
               </div>
 

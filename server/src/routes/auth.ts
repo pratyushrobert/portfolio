@@ -9,7 +9,7 @@ export async function authRoutes(fastify: FastifyInstance, context: RouteContext
   const cookieOptions = getSessionCookieOptions(context.config);
 
   fastify.post('/login', {
-    config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+    config: { rateLimit: context.config.NODE_ENV === 'test' ? { max: 100, timeWindow: '1 minute' } : { max: 5, timeWindow: '1 minute' } },
     preValidation: [validateBody(loginSchema)],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       const { email, password } = request.body as { email: string; password: string };

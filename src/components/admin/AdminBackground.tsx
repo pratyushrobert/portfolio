@@ -37,6 +37,7 @@ export function AdminBackground() {
   const [color, setColor] = useState<string>('#08090d');
   const [brightness, setBrightness] = useState<number>(100);
   const [overlayOpacity, setOverlayOpacity] = useState<number>(30);
+  const [glassBlur, setGlassBlur] = useState<number>(5);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,8 +65,10 @@ export function AdminBackground() {
 
       const rawBrightness = configData.wallpaper_brightness ? parseInt(configData.wallpaper_brightness, 10) : 100;
       const rawOverlayOpacity = configData.wallpaper_overlay_opacity ? parseInt(configData.wallpaper_overlay_opacity, 10) : 30;
+      const rawGlassBlur = configData.glass_blur ? parseInt(configData.glass_blur, 10) : 5;
       const activeBrightness = isNaN(rawBrightness) ? 100 : Math.min(100, Math.max(0, rawBrightness));
       const activeOverlayOpacity = isNaN(rawOverlayOpacity) ? 30 : Math.min(100, Math.max(0, rawOverlayOpacity));
+      const activeGlassBlur = isNaN(rawGlassBlur) ? 5 : Math.min(30, Math.max(0, rawGlassBlur));
 
       setImageUrl(activeImage);
       setPosition(activePosition);
@@ -74,6 +77,7 @@ export function AdminBackground() {
       setColor(activeColor);
       setBrightness(activeBrightness);
       setOverlayOpacity(activeOverlayOpacity);
+      setGlassBlur(activeGlassBlur);
       setUploadedAssets(serverAssets.filter(a => a.category === 'image'));
 
       // Ensure desktop store matches authoritative backend values
@@ -85,6 +89,7 @@ export function AdminBackground() {
         wallpaperColor: activeColor,
         wallpaperBrightness: activeBrightness,
         wallpaperOverlayOpacity: activeOverlayOpacity,
+        glassBlur: activeGlassBlur,
       });
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -140,6 +145,13 @@ export function AdminBackground() {
     setSaveSuccess(null);
   };
 
+  const handleGlassBlurChange = (newBlur: number) => {
+    const normalized = Math.min(30, Math.max(0, isNaN(newBlur) ? 5 : newBlur));
+    setGlassBlur(normalized);
+    setBackgroundConfig({ glassBlur: normalized });
+    setSaveSuccess(null);
+  };
+
   // Authoritative Save to backend site_config
   const handleSave = async () => {
     setSaving(true);
@@ -154,8 +166,9 @@ export function AdminBackground() {
         { key: 'wallpaper_color', value: color, description: 'Wallpaper fallback color' },
         { key: 'wallpaper_brightness', value: String(brightness), description: 'Wallpaper brightness percentage' },
         { key: 'wallpaper_overlay_opacity', value: String(overlayOpacity), description: 'Wallpaper overlay darkness percentage' },
+        { key: 'glass_blur', value: String(glassBlur), description: 'Global glass blur radius in pixels (0-30)' },
       ]);
-      setSaveSuccess('Background and wallpaper configuration saved to database successfully.');
+      setSaveSuccess('Appearance, background, and glass configuration saved to database successfully.');
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -172,6 +185,7 @@ export function AdminBackground() {
     setColor('#08090d');
     setBrightness(100);
     setOverlayOpacity(30);
+    setGlassBlur(5);
     setBackgroundConfig({
       wallpaper: '',
       wallpaperPosition: 'center',
@@ -180,6 +194,7 @@ export function AdminBackground() {
       wallpaperColor: '#08090d',
       wallpaperBrightness: 100,
       wallpaperOverlayOpacity: 30,
+      glassBlur: 5,
     });
     setSaveSuccess('Reset to default values. Click "Save Changes" to persist.');
   };
@@ -368,6 +383,25 @@ export function AdminBackground() {
               className="admin-range-slider"
             />
             <span className="admin-hint">Darkness opacity of the neutral veil overlay (0% = transparent, 100% = solid).</span>
+          </div>
+
+          {/* Global Glass Blur Slider */}
+          <div className="admin-form-field">
+            <div className="admin-range-header">
+              <label htmlFor="glass-blur">Global Glass Blur</label>
+              <span className="admin-range-value">{glassBlur}px</span>
+            </div>
+            <input
+              id="glass-blur"
+              type="range"
+              min="0"
+              max="30"
+              step="1"
+              value={glassBlur}
+              onChange={e => handleGlassBlurChange(Number(e.target.value))}
+              className="admin-range-slider"
+            />
+            <span className="admin-hint">Frosted backdrop blur radius across all windows, taskbar dock, launcher, clock, and panels (0–30px, default 5px).</span>
           </div>
         </div>
 

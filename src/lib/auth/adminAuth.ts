@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { authApi } from '../api/auth';
+import { adminApi } from '../api/admin';
 import type { AdminUser, LoginCredentials } from '../api/auth';
 import { ApiError, getApiErrorMessage, onUnauthorized } from '../api/client';
 
@@ -98,6 +99,16 @@ export async function logoutAdmin(): Promise<void> {
     await authApi.logout();
   } finally {
     // Fail closed locally even if the network prevents confirming server logout.
+    invalidateAdminAuth();
+  }
+}
+
+export async function logoutAllAdminSessions(): Promise<{ invalidated_sessions: number }> {
+  authGeneration += 1;
+  checkPromise = null;
+  try {
+    return await adminApi.logoutAllSessions();
+  } finally {
     invalidateAdminAuth();
   }
 }

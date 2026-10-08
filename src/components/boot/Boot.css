@@ -621,8 +621,8 @@
     rgba(14, 16, 22, 0.48) 50%,
     rgba(8, 10, 16, 0.6) 100%
   );
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.3),
@@ -751,8 +751,8 @@
   height: 105%;
   border-radius: 40px;
   /* Softens, saturates, and brightens wallpaper seen directly through the glass */
-  backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
-  -webkit-backdrop-filter: blur(10px) saturate(150%) brightness(108%) contrast(103%);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   pointer-events: none;
   z-index: 1;
   /* Soft elliptical fade ensures zero visible rectangular border */
@@ -888,9 +888,8 @@
     rgba(14, 17, 24, 0.3) 70%,
     rgba(8, 10, 15, 0.45) 100%
   );
-  /* Physical refraction & diffusion */
-  backdrop-filter: blur(24px) saturate(160%) brightness(106%) contrast(104%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(106%) contrast(104%);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   /* Multi-layer edge boundary */
   border: 1px solid rgba(255, 255, 255, 0.18);
   /* 4-way specular rim bevel and multi-level ambient shadows */
@@ -1065,8 +1064,8 @@
     rgba(255, 255, 255, 0.16) 0%,
     rgba(255, 255, 255, 0.04) 100%
   );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.4),
@@ -1140,8 +1139,8 @@
     rgba(255, 255, 255, 0.03) 60%,
     rgba(0, 0, 0, 0.15) 100%
   );
-  backdrop-filter: blur(12px) brightness(105%);
-  -webkit-backdrop-filter: blur(12px) brightness(105%);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #ffffff;
   font-size: 13.5px;
@@ -1195,8 +1194,8 @@
   padding: 10px 16px;
   border-radius: 12px;
   background: rgba(248, 250, 252, 0.94);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   color: #0c0d12;
   font-size: 13px;
   font-weight: 600;
@@ -1257,8 +1256,8 @@
   padding: 4px 12px;
   border-radius: 14px;
   background: rgba(14, 16, 22, 0.42);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 11.5px;
   color: rgba(255, 255, 255, 0.65);
@@ -1286,8 +1285,8 @@
     rgba(14, 16, 22, 0.48) 50%,
     rgba(8, 10, 16, 0.6) 100%
   );
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.3),

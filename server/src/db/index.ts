@@ -39,6 +39,7 @@ const defaultConfigs = [
   ['wallpaper_color', '#08090d', 'Wallpaper fallback color'],
   ['wallpaper_brightness', '100', 'Wallpaper brightness percentage'],
   ['wallpaper_overlay_opacity', '30', 'Wallpaper overlay darkness percentage'],
+  ['glass_blur', '5', 'Global glass blur radius in pixels (0-30)'],
 ] as const;
 
 function createClientWrapper(client: pg.PoolClient | pg.Pool): AppDatabase {

@@ -74,8 +74,10 @@ export function SystemBootSequence({ onComplete, onError }: SystemBootSequencePr
         if (config && mountedRef.current) {
           const rawBrightness = config.wallpaper_brightness ? parseInt(config.wallpaper_brightness, 10) : 100;
           const rawOverlayOpacity = config.wallpaper_overlay_opacity ? parseInt(config.wallpaper_overlay_opacity, 10) : 30;
+          const rawGlassBlur = config.glass_blur ? parseInt(config.glass_blur, 10) : 5;
           const activeBrightness = isNaN(rawBrightness) ? 100 : Math.min(100, Math.max(0, rawBrightness));
           const activeOverlayOpacity = isNaN(rawOverlayOpacity) ? 30 : Math.min(100, Math.max(0, rawOverlayOpacity));
+          const activeGlassBlur = isNaN(rawGlassBlur) ? 5 : Math.min(30, Math.max(0, rawGlassBlur));
 
           useDesktopStore.getState().setBackgroundConfig({
             wallpaper: config.wallpaper_url ?? '',
@@ -85,6 +87,7 @@ export function SystemBootSequence({ onComplete, onError }: SystemBootSequencePr
             wallpaperColor: config.wallpaper_color && config.wallpaper_color !== '#1a1a2e' ? config.wallpaper_color : '#08090d',
             wallpaperBrightness: activeBrightness,
             wallpaperOverlayOpacity: activeOverlayOpacity,
+            glassBlur: activeGlassBlur,
           });
         }
 

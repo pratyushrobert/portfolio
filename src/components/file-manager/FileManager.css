@@ -1164,7 +1164,8 @@
   border-radius: 8px;
   padding: 5px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
   user-select: none;
   display: flex;
   flex-direction: column;
