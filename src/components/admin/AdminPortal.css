@@ -292,7 +292,7 @@
 .admin-modal {
   width: 100%;
   max-height: 90vh;
-  background: var(--window-bg, #1e1e2e);
+  background: var(--window-bg, #121318);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
@@ -362,7 +362,7 @@
     background: var(--panel-bg, rgba(22, 23, 29, 0.9));
   }
   .admin-card {
-    background: var(--card-bg, #1e1e2e);
+    background: var(--card-bg, #14161c);
   }
 }
 

@@ -1,21 +1,12 @@
-import { useRef, useEffect, useCallback } from 'react';
-import {
-  useDesktopStore,
-  xToGridCol,
-  yToGridRow,
-  gridColToX,
-  gridRowToY,
-} from '../../stores/useDesktopStore';
+import { useEffect, useRef } from 'react';
+import { useDesktopStore } from '../../stores/useDesktopStore';
 import { getAppIcon } from '../../lib/icons';
-import type { DesktopIcon, PanelPosition } from '../../types/desktop';
-import './Desktop.css';
-
-const DRAG_THRESHOLD = 5;
+import type { DesktopIcon } from '../../types/desktop';
+import './DesktopIcons.css';
 
 interface DesktopIconItemProps {
   icon: DesktopIcon;
   isSelected: boolean;
-  panelPosition: PanelPosition;
   onSelect: (id: string, e?: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
   onContextMenuIcon?: (icon: DesktopIcon, e: React.MouseEvent) => void;
@@ -24,146 +15,20 @@ interface DesktopIconItemProps {
 function DesktopIconItem({
   icon,
   isSelected,
-  panelPosition,
   onSelect,
   onDoubleClick,
   onContextMenuIcon,
 }: DesktopIconItemProps) {
   const IconComponent = getAppIcon(icon.appId || icon.icon);
-  const ref = useRef<HTMLDivElement>(null);
-  const moveIconWithCollision = useDesktopStore(state => state.moveIconWithCollision);
-
-  const sessionRef = useRef<{
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
-    isDragging: boolean;
-    pointerId: number;
-  } | null>(null);
-
-  const justDraggedRef = useRef(false);
-
-  // Stable handler refs
-  const handlePointerMoveRef = useRef<((e: PointerEvent) => void) | undefined>(undefined);
-  const handlePointerUpRef = useRef<((e: PointerEvent) => void) | undefined>(undefined);
-
-  useEffect(() => {
-    handlePointerMoveRef.current = (e: PointerEvent) => {
-      const session = sessionRef.current;
-      if (!session || session.pointerId !== e.pointerId) return;
-
-      const dx = e.clientX - session.startX;
-      const dy = e.clientY - session.startY;
-
-      if (!session.isDragging) {
-        if (Math.hypot(dx, dy) >= DRAG_THRESHOLD) {
-          session.isDragging = true;
-          document.body.style.userSelect = 'none';
-          ref.current?.classList.add('dragging');
-          try {
-            ref.current?.setPointerCapture(session.pointerId);
-          } catch {
-            // ignore pointer capture errors
-          }
-        }
-      }
-
-      if (session.isDragging && ref.current) {
-        e.preventDefault();
-        ref.current.style.left = `${session.originX + dx}px`;
-        ref.current.style.top = `${session.originY + dy}px`;
-      }
-    };
-
-    handlePointerUpRef.current = (e: PointerEvent) => {
-      const session = sessionRef.current;
-      if (!session || session.pointerId !== e.pointerId) return;
-
-      if (session.isDragging) {
-        try {
-          ref.current?.releasePointerCapture(session.pointerId);
-        } catch {
-          // ignore
-        }
-        document.body.style.userSelect = '';
-        ref.current?.classList.remove('dragging');
-
-        const dx = e.clientX - session.startX;
-        const dy = e.clientY - session.startY;
-        const rawX = session.originX + dx;
-        const rawY = session.originY + dy;
-
-        // Deterministically compute target grid cell
-        const targetCol = Math.max(0, xToGridCol(rawX, panelPosition));
-        const targetRow = Math.max(0, yToGridRow(rawY, panelPosition));
-        const snappedX = gridColToX(targetCol, panelPosition);
-        const snappedY = gridRowToY(targetRow, panelPosition);
-
-        // Immediately update DOM style to avoid remaining at raw dragged coordinates
-        if (ref.current) {
-          ref.current.style.left = `${snappedX}px`;
-          ref.current.style.top = `${snappedY}px`;
-        }
-
-        // Commit change to authoritative store
-        moveIconWithCollision(icon.id, targetCol, targetRow, icon.col, icon.row);
-
-        justDraggedRef.current = true;
-        setTimeout(() => {
-          justDraggedRef.current = false;
-        }, 80);
-      }
-
-      sessionRef.current = null;
-      if (handlePointerMoveRef.current) {
-        document.removeEventListener('pointermove', handlePointerMoveRef.current);
-      }
-      if (handlePointerUpRef.current) {
-        document.removeEventListener('pointerup', handlePointerUpRef.current);
-      }
-    };
-  }, [icon.id, icon.col, icon.row, panelPosition, moveIconWithCollision]);
-
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.button !== 0) return; // Only primary button initiates drag
-    sessionRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      originX: icon.x,
-      originY: icon.y,
-      isDragging: false,
-      pointerId: e.pointerId,
-    };
-
-    document.addEventListener('pointermove', handlePointerMoveRef.current!);
-    document.addEventListener('pointerup', handlePointerUpRef.current!);
-  }, [icon.x, icon.y]);
-
-  useEffect(() => {
-    return () => {
-      if (sessionRef.current) {
-        sessionRef.current = null;
-        document.body.style.userSelect = '';
-        if (handlePointerMoveRef.current) {
-          document.removeEventListener('pointermove', handlePointerMoveRef.current);
-        }
-        if (handlePointerUpRef.current) {
-          document.removeEventListener('pointerup', handlePointerUpRef.current);
-        }
-      }
-    };
-  }, []);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-    if (justDraggedRef.current) return;
     onSelect(icon.id, e);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (justDraggedRef.current) return;
-    onDoubleClick(icon.id);
+    onDoubleClick(icon.appId || icon.id);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -176,7 +41,7 @@ function DesktopIconItem({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      onDoubleClick(icon.id);
+      onDoubleClick(icon.appId || icon.id);
     } else if (e.key === ' ') {
       e.preventDefault();
       onSelect(icon.id);
@@ -184,31 +49,25 @@ function DesktopIconItem({
   };
 
   return (
-    <div
-      ref={ref}
+    <button
+      ref={buttonRef}
+      type="button"
       data-icon-id={icon.id}
-      className={`desktop-icon ${isSelected ? 'selected' : ''}`}
-      onPointerDown={handlePointerDown}
+      className={`desktop-glass-icon ${isSelected ? 'selected' : ''}`}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
       onKeyDown={handleKeyDown}
-      style={{
-        left: `${icon.x}px`,
-        top: `${icon.y}px`,
-      }}
       tabIndex={0}
       role="button"
-      aria-label={icon.label}
+      aria-label={`${icon.label} application shortcut`}
       aria-pressed={isSelected}
     >
-      <div className="icon-image">
-        <IconComponent size={28} />
+      <div className="desktop-glass-box" aria-hidden="true">
+        <IconComponent size={26} className="desktop-glass-symbol" />
       </div>
-      <span className="icon-label" title={icon.label}>
-        {icon.label}
-      </span>
-    </div>
+      <span className="desktop-glass-label">{icon.label}</span>
+    </button>
   );
 }
 
@@ -225,16 +84,32 @@ export function DesktopIcons({
   onDoubleClick,
   onContextMenuIcon,
 }: DesktopIconsProps) {
-  const icons = useDesktopStore(state => state.icons);
-  const panelPosition = useDesktopStore(state => state.panelPosition);
-  const snapIconsToGrid = useDesktopStore(state => state.snapIconsToGrid);
+  const allIcons = useDesktopStore((state) => state.icons);
+  const panelPosition = useDesktopStore((state) => state.panelPosition);
 
-  // Align and sanitize grid on mount to ensure valid col/row coordinates
-  useEffect(() => {
-    snapIconsToGrid();
-  }, [snapIconsToGrid]);
+  // Desktop shows ONLY Terminal and About Me in a clean centered vertical column
+  const desktopApps = ['terminal', 'about'];
+  const filtered = allIcons.filter(
+    (i) => desktopApps.includes(i.appId || i.id)
+  );
 
-  // Keyboard navigation
+  // Maintain canonical order: Terminal first, then About Me
+  const orderedIcons = desktopApps
+    .map((appId) =>
+      filtered.find((i) => (i.appId || i.id) === appId) || {
+        id: appId,
+        label: appId === 'terminal' ? 'Terminal' : 'About Me',
+        icon: appId,
+        appId: appId,
+        col: 0,
+        row: appId === 'terminal' ? 0 : 1,
+        x: 0,
+        y: 0,
+      }
+    )
+    .filter(Boolean) as DesktopIcon[];
+
+  // Keyboard navigation between the two stacked icons
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const activeEl = document.activeElement;
@@ -253,58 +128,56 @@ export function DesktopIcons({
       }
 
       if (!selectedId) {
-        if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key) && icons.length > 0) {
+        if (['ArrowDown', 'ArrowUp'].includes(e.key) && orderedIcons.length > 0) {
           e.preventDefault();
-          onSelect(icons[0].id);
+          onSelect(orderedIcons[0].id);
         }
         return;
       }
 
-      const currentIndex = icons.findIndex(i => i.id === selectedId);
+      const currentIndex = orderedIcons.findIndex((i) => i.id === selectedId);
       if (currentIndex === -1) return;
 
       if (e.key === 'Enter') {
         e.preventDefault();
-        onDoubleClick(selectedId);
+        const active = orderedIcons[currentIndex];
+        onDoubleClick(active.appId || active.id);
         return;
       }
 
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
         e.preventDefault();
-        const nextIndex = (currentIndex + 1) % icons.length;
-        onSelect(icons[nextIndex].id);
+        const nextIndex = (currentIndex + 1) % orderedIcons.length;
+        onSelect(orderedIcons[nextIndex].id);
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
         e.preventDefault();
-        const prevIndex = (currentIndex - 1 + icons.length) % icons.length;
-        onSelect(icons[prevIndex].id);
+        const prevIndex = (currentIndex - 1 + orderedIcons.length) % orderedIcons.length;
+        onSelect(orderedIcons[prevIndex].id);
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, icons, onSelect, onDoubleClick]);
-
-  const handleSelectIcon = (id: string, e?: React.MouseEvent) => {
-    if (e?.ctrlKey || e?.metaKey) {
-      onSelect(selectedId === id ? null : id, e);
-    } else {
-      onSelect(id, e);
-    }
-  };
+  }, [selectedId, orderedIcons, onSelect, onDoubleClick]);
 
   return (
-    <div className="desktop-icons" role="list" aria-label="Desktop icons">
-      {icons.map(icon => (
-        <DesktopIconItem
-          key={icon.id}
-          icon={icon}
-          panelPosition={panelPosition}
-          isSelected={selectedId === icon.id}
-          onSelect={handleSelectIcon}
-          onDoubleClick={onDoubleClick}
-          onContextMenuIcon={onContextMenuIcon}
-        />
-      ))}
+    <div className="os-desktop-icons" role="region" aria-label="Desktop application shortcuts">
+      <div
+        className={`os-desktop-minimal-column position-${panelPosition}`}
+        role="group"
+        aria-label="Desktop shortcuts"
+      >
+        {orderedIcons.map((icon) => (
+          <DesktopIconItem
+            key={icon.id}
+            icon={icon}
+            isSelected={selectedId === icon.id}
+            onSelect={onSelect}
+            onDoubleClick={onDoubleClick}
+            onContextMenuIcon={onContextMenuIcon}
+          />
+        ))}
+      </div>
     </div>
   );
 }

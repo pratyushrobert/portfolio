@@ -3,7 +3,7 @@
   height: 100%;
   padding: 8px 12px;
   box-sizing: border-box;
-  background: #1e1e2e;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -12,28 +12,24 @@
 }
 
 .terminal .xterm-viewport {
-  background: #1e1e2e;
+  background: transparent !important;
 }
 
 .terminal .xterm-screen {
-  background: #1e1e2e;
-}
-
-.terminal .xterm-cursor {
-  background: #f5e0dc !important;
+  background: transparent !important;
 }
 
 .terminal .xterm-selection {
-  background: rgba(137, 180, 250, 0.3) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Links */
 .terminal .xterm-link {
-  color: #89b4fa;
+  color: #7aa2f7;
   text-decoration: underline;
   cursor: pointer;
 }
 
 .terminal .xterm-link:hover {
-  color: #b4befe;
+  color: #a9c1fb;
 }

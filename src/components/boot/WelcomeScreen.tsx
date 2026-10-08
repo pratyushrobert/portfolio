@@ -20,19 +20,13 @@ function parseOverlayColor(overlay: string): string {
 
 export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const localUser = useBootStore((state) => state.localUser);
-  const wallpaper = useDesktopStore((state) => state.wallpaper);
-  const wallpaperPosition = useDesktopStore((state) => state.wallpaperPosition) || 'center';
-  const wallpaperSize = useDesktopStore((state) => state.wallpaperSize) || 'cover';
   const wallpaperOverlay = useDesktopStore((state) => state.wallpaperOverlay) || '#000000';
-  const wallpaperColor = useDesktopStore((state) => state.wallpaperColor) || '#08090d';
-  const wallpaperBrightness = useDesktopStore((state) => state.wallpaperBrightness ?? 100);
   const wallpaperOverlayOpacity = useDesktopStore((state) => state.wallpaperOverlayOpacity ?? 30);
 
   // Random quote selected ONCE on mount and kept stable
   const [quote] = useState(() => getRandomWelcomeQuote());
   const [isExiting, setIsExiting] = useState(false);
 
-  const hasCustomWallpaper = Boolean(wallpaper && wallpaper.trim());
   const userName = localUser?.name?.trim() || 'Guest';
   const loginDimOpacity = Math.min(1, Math.max(0.2, (wallpaperOverlayOpacity / 100) * 1.25));
 
@@ -48,12 +42,12 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       return () => clearTimeout(quickTimer);
     }
 
-    // Begin exit transition at 1300ms
+    // Begin exit transition at 1150ms
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-    }, 1300);
+    }, 1150);
 
-    // Complete transition to desktop at 1500ms
+    // Complete transition to desktop at 1500ms (350ms smooth cross-dissolve)
     const completeTimer = setTimeout(() => {
       onComplete();
     }, 1500);
@@ -71,20 +65,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       aria-live="polite"
       aria-label={`Welcome, ${userName}`}
     >
-      {/* Background Wallpaper Matching Login Screen */}
-      <div
-        className={`login-wallpaper ${!hasCustomWallpaper ? 'has-fallback' : ''}`}
-        style={{
-          backgroundColor: wallpaperColor,
-          backgroundImage: hasCustomWallpaper ? `url("${wallpaper}")` : undefined,
-          backgroundSize: wallpaperSize,
-          backgroundPosition: wallpaperPosition,
-          filter: `brightness(${wallpaperBrightness}%)`,
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Dim & Vignette Overlays */}
+      {/* Dim & Vignette Overlays matching login tone over persistent wallpaper */}
       <div
         className="login-dim-overlay"
         style={{

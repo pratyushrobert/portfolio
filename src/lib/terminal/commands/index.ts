@@ -31,6 +31,7 @@ export * from './scan';
 export * from './challenge';
 export * from './achievements';
 export * from './snake';
+export * from './cyberTools';
 
 // Import and register all commands
 import { registerCommand } from '../commands';
@@ -67,6 +68,7 @@ import { scanCommand, nmapCommand } from './scan';
 import { challengeCommand } from './challenge';
 import { achievementsCommand, badgesCommand } from './achievements';
 import { snakeCommand } from './snake';
+import { packetmonCommand, wifiscanCommand, seclogCommand } from './cyberTools';
 
 // Register all commands
 registerCommand(helpCommand);
@@ -106,3 +108,6 @@ registerCommand(challengeCommand);
 registerCommand(achievementsCommand);
 registerCommand(badgesCommand);
 registerCommand(snakeCommand);
+registerCommand(packetmonCommand);
+registerCommand(wifiscanCommand);
+registerCommand(seclogCommand);

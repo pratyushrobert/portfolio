@@ -536,7 +536,7 @@
 .login-screen {
   position: fixed;
   inset: 0;
-  background-color: #06070a;
+  background-color: transparent;
   color: var(--text-h, #ffffff);
   font-family: var(--sans, system-ui, -apple-system, sans-serif);
   z-index: 99999;
@@ -560,7 +560,7 @@
 .login-screen.is-submitting .login-footer {
   opacity: 0;
   transform: scale(0.985);
-  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
 }
 
@@ -1355,7 +1355,7 @@
 .mimios-welcome-screen {
   position: fixed;
   inset: 0;
-  background-color: #06070a;
+  background-color: transparent;
   color: var(--text-h, #ffffff);
   font-family: var(--font-ui, var(--sans));
   z-index: 99999;
@@ -1364,23 +1364,13 @@
   justify-content: center;
   user-select: none;
   overflow: hidden;
-  animation: welcomeFadeIn 0.22s ease-out;
-  transition: opacity 0.2s ease-out, filter 0.2s ease-out;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mimios-welcome-screen.is-exiting {
   opacity: 0;
-  filter: brightness(1.08) blur(2px);
+  filter: blur(1.5px);
   pointer-events: none;
-}
-
-@keyframes welcomeFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 /* Centered Content Container Floating Over Wallpaper */

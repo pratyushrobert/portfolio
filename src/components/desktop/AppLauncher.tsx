@@ -1,26 +1,108 @@
 import { useRef, useEffect, useState } from 'react';
-import { Search, LogOut, Power } from 'lucide-react';
-import type { AppDefinition } from '../../types/desktop';
+import {
+  Terminal as TerminalIcon,
+  Network,
+  ShieldAlert,
+  Activity,
+  Binary,
+  Radio,
+  FileCode,
+  Award,
+  Search,
+  LogOut,
+  Power,
+  Shield,
+} from 'lucide-react';
 import { useWindowStore } from '../../stores/useWindowStore';
 import { useDesktopStore } from '../../stores/useDesktopStore';
 import { useBootStore } from '../../stores/useBootStore';
 import { useFlyoutPlacement } from '../../lib/ui/flyoutPosition';
 import { getAppIcon } from '../../lib/icons';
 import './Desktop.css';
+import '../ui/LiquidGlass.css';
 
-const APP_DEFINITIONS: AppDefinition[] = [
-  { id: 'projects', name: 'Projects', icon: getAppIcon('projects'), component: () => null },
-  { id: 'about', name: 'About Me', icon: getAppIcon('about'), component: () => null },
-  { id: 'skills', name: 'Skills', icon: getAppIcon('skills'), component: () => null },
-  { id: 'experience', name: 'Experience', icon: getAppIcon('experience'), component: () => null },
-  { id: 'certificates', name: 'Certificates', icon: getAppIcon('certificates'), component: () => null },
-  { id: 'resume', name: 'Resume', icon: getAppIcon('resume'), component: () => null },
-  { id: 'contact', name: 'Contact', icon: getAppIcon('contact'), component: () => null },
-  { id: 'files', name: 'File Manager', icon: getAppIcon('files'), component: () => null },
-  { id: 'terminal', name: 'Terminal', icon: getAppIcon('terminal'), component: () => null },
-  { id: 'editor', name: 'Editor', icon: getAppIcon('editor'), component: () => null },
-  { id: 'settings', name: 'Settings', icon: getAppIcon('settings'), component: () => null },
-  { id: 'snake', name: 'Cyber Snake', icon: getAppIcon('snake'), component: () => null },
+export interface CyberToolItem {
+  id: string;
+  name: string;
+  category: 'core' | 'security';
+  description: string;
+  command?: string;
+  badge: 'ONLINE' | 'SIMULATION' | 'MISSION';
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}
+
+export const CYBER_TOOLS: CyberToolItem[] = [
+  {
+    id: 'terminal',
+    name: 'Terminal',
+    category: 'core',
+    description: 'System Shell (Interactive zsh/bash session)',
+    badge: 'ONLINE',
+    icon: TerminalIcon,
+  },
+  {
+    id: 'netscan',
+    name: 'Network Scanner',
+    category: 'security',
+    description: 'Scan virtual subnets & probe loopback node',
+    command: 'scan localhost',
+    badge: 'SIMULATION',
+    icon: Network,
+  },
+  {
+    id: 'portscan',
+    name: 'Port Scanner',
+    category: 'security',
+    description: 'Audit listening TCP/UDP service ports & banners',
+    command: 'scan demo-server',
+    badge: 'SIMULATION',
+    icon: ShieldAlert,
+  },
+  {
+    id: 'packetmon',
+    name: 'Packet Monitor',
+    category: 'security',
+    description: 'Live packet telemetry & protocol frame inspector',
+    command: 'packetmon',
+    badge: 'SIMULATION',
+    icon: Activity,
+  },
+  {
+    id: 'hash',
+    name: 'Hash Analyzer',
+    category: 'security',
+    description: 'Cryptographic digest calculator (SHA-256 / SHA-512)',
+    command: 'hash sha256 MimiOS-Kernel-v2.0',
+    badge: 'SIMULATION',
+    icon: Binary,
+  },
+  {
+    id: 'wifiscan',
+    name: 'WiFi Analyzer',
+    category: 'security',
+    description: '802.11 ax/ac band audit & wireless telemetry',
+    command: 'wifiscan',
+    badge: 'SIMULATION',
+    icon: Radio,
+  },
+  {
+    id: 'seclog',
+    name: 'Security Log Viewer',
+    category: 'security',
+    description: 'Journalctl audit trail & PAM authentication journal',
+    command: 'seclog',
+    badge: 'SIMULATION',
+    icon: FileCode,
+  },
+  {
+    id: 'challenge',
+    name: 'Cyber Challenges',
+    category: 'security',
+    description: 'Interactive CTF puzzle missions & cipher decoding',
+    command: 'challenge',
+    badge: 'MISSION',
+    icon: Award,
+  },
 ];
 
 interface AppLauncherProps {
@@ -31,63 +113,15 @@ interface AppLauncherProps {
 export function AppLauncher({ onClose, anchorRef }: AppLauncherProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const listRef = useRef<HTMLUListElement>(null);
-  const { openWindowWithParams } = useWindowStore();
+  const listRef = useRef<HTMLDivElement>(null);
+  const { windows, openWindowWithParams, focusWindow, restoreWindow } = useWindowStore();
 
-  const filteredApps = APP_DEFINITIONS.filter(app =>
-    app.name.toLowerCase().includes(query.toLowerCase())
+  const filteredTools = CYBER_TOOLS.filter(
+    (tool) =>
+      tool.name.toLowerCase().includes(query.toLowerCase()) ||
+      tool.description.toLowerCase().includes(query.toLowerCase()) ||
+      tool.badge.toLowerCase().includes(query.toLowerCase())
   );
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'Escape':
-          onClose();
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          setSelectedIndex(i => Math.min(i + 1, filteredApps.length - 1));
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setSelectedIndex(i => Math.max(i - 1, 0));
-          break;
-        case 'Enter':
-          e.preventDefault();
-          if (filteredApps[selectedIndex]) {
-            launchApp(filteredApps[selectedIndex]);
-          }
-          break;
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [filteredApps.length, selectedIndex, onClose]);
-
-  useEffect(() => {
-    listRef.current?.querySelector('.selected')?.scrollIntoView({ block: 'nearest' });
-  }, [selectedIndex]);
-
-  const launchApp = (app: AppDefinition) => {
-    const iconComponent = getAppIcon(app.icon || app.id);
-    const params = app.id === 'resume' ? { path: '/home/pratyush/resume.pdf' } : undefined;
-    openWindowWithParams(
-      {
-        id: `${app.id}-${Date.now()}`,
-        appId: app.id,
-        title: app.name,
-        icon: iconComponent,
-        x: 100 + Math.random() * 200,
-        y: 100 + Math.random() * 150,
-        width: app.id === 'settings' ? 760 : app.id === 'snake' ? 440 : 800,
-        height: app.id === 'settings' ? 520 : app.id === 'snake' ? 520 : 600,
-        isMinimized: false,
-        isMaximized: false,
-      },
-      params
-    );
-    onClose();
-  };
 
   const panelPosition = useDesktopStore((state) => state.panelPosition);
   const panelStyle = useDesktopStore((state) => state.panelStyle ?? 'floating');
@@ -96,64 +130,154 @@ export function AppLauncher({ onClose, anchorRef }: AppLauncherProps) {
     anchorRef,
     panelPosition,
     panelStyle,
-    preferredWidth: 320,
-    preferredHeight: 500,
+    preferredWidth: 360,
+    preferredHeight: 540,
     align: 'start',
+    offset: 10,
   });
+
+  const launchTool = (tool: CyberToolItem) => {
+    // If launching default shell and an empty terminal is open, focus it
+    if (!tool.command) {
+      const existing = windows.find((w) => w.appId === 'terminal' && !w.appParams?.command);
+      if (existing) {
+        if (existing.isMinimized) {
+          restoreWindow(existing.id);
+        }
+        focusWindow(existing.id);
+        onClose();
+        return;
+      }
+    }
+
+    openWindowWithParams(
+      {
+        id: `terminal-${tool.id}-${Date.now()}`,
+        appId: 'terminal',
+        title: tool.command ? `Terminal — ${tool.name}` : 'Terminal',
+        icon: getAppIcon('terminal'),
+        x: 100 + Math.random() * 120,
+        y: 80 + Math.random() * 80,
+        width: 820,
+        height: 520,
+        isMinimized: false,
+        isMaximized: false,
+      },
+      tool.command ? { command: tool.command } : undefined
+    );
+    onClose();
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'Escape':
+          e.preventDefault();
+          onClose();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex((i) => Math.min(i + 1, filteredTools.length - 1));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex((i) => Math.max(i - 1, 0));
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (filteredTools[selectedIndex]) {
+            launchTool(filteredTools[selectedIndex]);
+          }
+          break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredTools, selectedIndex, onClose]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
 
   return (
     <div
-      className={`app-launcher ${placement.positionClass}`}
+      className={`cyber-tools-menu ${placement.positionClass}`}
       style={placement.style}
-      role="menu"
-      aria-label="Applications"
+      role="dialog"
+      aria-modal="true"
+      aria-label="MimiOS Cyber & System Tools"
     >
-      <div className="launcher-search">
-        <Search size={16} />
-        <input
-          type="text"
-          placeholder="Search applications..."
-          value={query}
-          onChange={e => {
-            setQuery(e.target.value);
-            setSelectedIndex(0);
-          }}
-          autoFocus
-          aria-label="Search applications"
-        />
+      {/* Menu Header with technical branding */}
+      <div className="cyber-tools-header">
+        <div className="cyber-tools-title-row">
+          <div className="cyber-tools-brand">
+            <Shield size={14} className="cyber-tools-shield-icon" aria-hidden="true" />
+            <span className="cyber-tools-title">MIMIOS CYBER TOOLS</span>
+          </div>
+          <span className="cyber-tools-sys-badge">SYS 2.0</span>
+        </div>
+
+        {/* Filter Input */}
+        <div className="cyber-tools-search">
+          <Search size={14} className="cyber-tools-search-icon" aria-hidden="true" />
+          <input
+            type="text"
+            placeholder="Search cyber & system tools..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+            aria-label="Filter cyber tools"
+          />
+        </div>
       </div>
-      <ul className="launcher-list" ref={listRef} role="listbox">
-        {filteredApps.length === 0 ? (
-          <li className="launcher-empty">No applications found</li>
+
+      {/* Tool List grouped by section */}
+      <div className="cyber-tools-list-wrap" ref={listRef} role="listbox">
+        {filteredTools.length === 0 ? (
+          <div className="cyber-tools-empty" role="status">
+            No matching tools found
+          </div>
         ) : (
-          filteredApps.map((app, index) => {
-            const IconComponent = getAppIcon(app.icon || app.id);
+          filteredTools.map((tool, index) => {
+            const Icon = tool.icon;
+            const isSelected = index === selectedIndex;
             return (
-              <li
-                key={app.id}
-                className={`launcher-item ${index === selectedIndex ? 'selected' : ''}`}
+              <button
+                key={tool.id}
+                type="button"
+                className={`cyber-tool-item ${isSelected ? 'selected' : ''}`}
                 role="option"
-                aria-selected={index === selectedIndex}
-                onClick={() => launchApp(app)}
+                aria-selected={isSelected}
+                onClick={() => launchTool(tool)}
                 onMouseEnter={() => setSelectedIndex(index)}
               >
-                <IconComponent className="launcher-item-icon" size={20} />
-                <span className="launcher-item-name">{app.name}</span>
-              </li>
+                <div className="cyber-tool-icon-box">
+                  <Icon size={16} className="cyber-tool-icon" />
+                </div>
+                <div className="cyber-tool-info">
+                  <div className="cyber-tool-name-row">
+                    <span className="cyber-tool-name">{tool.name}</span>
+                    <span className={`cyber-tool-badge badge-${tool.badge.toLowerCase()}`}>
+                      {tool.badge === 'ONLINE' ? '● ONLINE' : `[${tool.badge}]`}
+                    </span>
+                  </div>
+                  <span className="cyber-tool-desc">{tool.description}</span>
+                </div>
+              </button>
             );
           })
         )}
-      </ul>
-      <div className="launcher-footer">
-        <div className="launcher-shortcuts">
-          <kbd>Esc</kbd> Close &nbsp;
-          <kbd>↑↓</kbd> Navigate &nbsp;
-          <kbd>Enter</kbd> Launch
+      </div>
+
+      {/* Footer with Keyboard Hints & Power Controls */}
+      <div className="cyber-tools-footer">
+        <div className="cyber-tools-shortcuts">
+          <kbd>Esc</kbd> Close &nbsp;•&nbsp; <kbd>↑↓</kbd> Select &nbsp;•&nbsp; <kbd>Enter</kbd> Launch
         </div>
-        <div className="launcher-power-actions">
+        <div className="cyber-tools-actions">
           <button
             type="button"
-            className="launcher-power-btn"
+            className="cyber-power-btn"
             onClick={() => {
               onClose();
               useBootStore.getState().logoutToLogin();
@@ -161,20 +285,20 @@ export function AppLauncher({ onClose, anchorRef }: AppLauncherProps) {
             title="Lock screen / Return to login"
             aria-label="Lock screen"
           >
-            <LogOut size={13} />
+            <LogOut size={12} />
             <span>Lock</span>
           </button>
           <button
             type="button"
-            className="launcher-power-btn danger"
+            className="cyber-power-btn danger"
             onClick={() => {
               onClose();
               useBootStore.getState().powerOff();
             }}
-            title="Shut Down Machine"
+            title="Shut Down System"
             aria-label="Shut down"
           >
-            <Power size={13} />
+            <Power size={12} />
             <span>Power</span>
           </button>
         </div>

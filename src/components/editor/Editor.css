@@ -206,7 +206,7 @@
 
 @media (prefers-color-scheme: dark) {
   .editor-btn {
-    background: var(--btn-bg, #1e1e2e);
+    background: var(--btn-bg, #121318);
     border-color: var(--border);
   }
   .editor-btn:hover:not(:disabled) {
@@ -218,6 +218,6 @@
     color: var(--accent);
   }
   .editor-textarea {
-    background: var(--editor-bg, #1e1e2e);
+    background: var(--editor-bg, #121318);
   }
 }

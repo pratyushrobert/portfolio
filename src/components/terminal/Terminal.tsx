@@ -14,6 +14,7 @@ import './Terminal.css';
 
 interface TerminalProps {
   windowId: string;
+  appParams?: Record<string, unknown>;
   onOpenRequest?: (request: DesktopOpenRequest) => void;
 }
 
@@ -29,10 +30,10 @@ function getLongestCommonPrefix(strings: string[]): string {
   return prefix;
 }
 
-export function Terminal({ windowId: _windowId, onOpenRequest }: TerminalProps) {
+export function Terminal({ windowId: _windowId, appParams, onOpenRequest }: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
-  const fitAddonRef = useRef<FitAddon>(new FitAddon());
+  const fitAddonRef = useRef<FitAddon | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
@@ -55,40 +56,70 @@ export function Terminal({ windowId: _windowId, onOpenRequest }: TerminalProps) 
       fontSize: 13,
       fontFamily: 'JetBrains Mono, Fira Code, monospace',
       theme: {
-        background: '#1e1e2e',
-        foreground: '#cdd6f4',
-        cursor: '#f5e0dc',
-        cursorAccent: '#1e1e2e',
-        selectionBackground: 'rgba(137, 180, 250, 0.3)',
-        black: '#1e1e2e',
-        red: '#f38ba8',
-        green: '#a6e3a1',
-        yellow: '#f9e2af',
-        blue: '#89b4fa',
-        magenta: '#f5c2e7',
-        cyan: '#94e2d5',
-        white: '#bac2de',
-        brightBlack: '#6c7086',
-        brightRed: '#f38ba8',
-        brightGreen: '#a6e3a1',
-        brightYellow: '#f9e2af',
-        brightBlue: '#89b4fa',
-        brightMagenta: '#f5c2e7',
-        brightCyan: '#94e2d5',
-        brightWhite: '#cdd6f4',
+        background: 'transparent',
+        foreground: '#e2e4ea',
+        cursor: '#f0f2f5',
+        cursorAccent: '#121418',
+        selectionBackground: 'rgba(255, 255, 255, 0.2)',
+        black: '#121418',
+        red: '#e06c75',
+        green: '#98c379',
+        yellow: '#e5c07b',
+        blue: '#61afef',
+        magenta: '#b0b4c0',
+        cyan: '#56b6c2',
+        white: '#d8dbe2',
+        brightBlack: '#5c606e',
+        brightRed: '#e06c75',
+        brightGreen: '#98c379',
+        brightYellow: '#e5c07b',
+        brightBlue: '#61afef',
+        brightMagenta: '#d0d4de',
+        brightCyan: '#56b6c2',
+        brightWhite: '#ffffff',
       },
       convertEol: true,
       scrollback: 1000,
     });
 
-    term.loadAddon(fitAddonRef.current);
+    const fitAddon = new FitAddon();
+    fitAddonRef.current = fitAddon;
+    term.loadAddon(fitAddon);
     term.loadAddon(new WebLinksAddon());
-    term.open(terminalRef.current!);
-    fitAddonRef.current.fit();
+    term.open(terminalRef.current);
+
+    // Initial safe fit once font metrics and container dimensions are established
+    const initialFit = () => {
+      if (
+        terminalRef.current &&
+        terminalRef.current.clientWidth > 80 &&
+        terminalRef.current.clientHeight > 60
+      ) {
+        try {
+          fitAddon.fit();
+        } catch {
+          // ignore fit error
+        }
+      }
+    };
+
+    if (document.fonts) {
+      document.fonts.ready.then(initialFit).catch(initialFit);
+    } else {
+      setTimeout(initialFit, 50);
+    }
 
     // Welcome message
     writeWelcome(term);
-    writePrompt(term);
+
+    const initialCmd = (appParams?.command || appParams?.initialCommand) as string | undefined;
+    if (initialCmd) {
+      writePrompt(term);
+      term.writeln(initialCmd);
+      void executeCommand(term, initialCmd);
+    } else {
+      writePrompt(term);
+    }
 
     xtermRef.current = term;
 
@@ -97,13 +128,31 @@ export function Terminal({ windowId: _windowId, onOpenRequest }: TerminalProps) 
       handleInput(term, data);
     });
 
-    // Handle resize with both ResizeObserver (for window resize/maximize) and window event
-    const handleResize = () => {
+    // Handle resize with debounced ResizeObserver and container bounds checking
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let wasHidden = false;
+
+    const safeFit = () => {
+      if (!terminalRef.current || !fitAddonRef.current || !xtermRef.current) return;
+      const { clientWidth, clientHeight } = terminalRef.current;
+      if (clientWidth < 80 || clientHeight < 60) {
+        wasHidden = true;
+        return;
+      }
       try {
-        fitAddonRef.current?.fit();
+        fitAddonRef.current.fit();
+        if (wasHidden) {
+          xtermRef.current.refresh(0, xtermRef.current.rows - 1);
+          wasHidden = false;
+        }
       } catch {
         // ignore fit errors during fast unmount/hide
       }
+    };
+
+    const handleResize = () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(safeFit, 100);
     };
 
     const resizeObserver = new ResizeObserver(() => {
@@ -117,10 +166,16 @@ export function Terminal({ windowId: _windowId, onOpenRequest }: TerminalProps) 
     window.addEventListener('resize', handleResize);
 
     return () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
-      term.dispose();
+      try {
+        term.dispose();
+      } catch {
+        // ignore
+      }
       xtermRef.current = null;
+      fitAddonRef.current = null;
     };
   }, []);
 
@@ -153,10 +208,9 @@ export function Terminal({ windowId: _windowId, onOpenRequest }: TerminalProps) 
     const cwd = vfs.getCwd();
     // Show ~ for home directory
     const displayPath = cwd === '/home/pratyush' ? '~' : cwd.replace('/home/pratyush', '~');
-    const user =
-      useBootStore.getState().localUser?.name?.toLowerCase().replace(/[^a-z0-9_-]/g, '') ||
-      'pratyush';
-    term.write(`\x1b[1;32m${user}@mimi\x1b[0m:\x1b[1;34m` + displayPath + '\x1b[0m$ ');
+    const rawUser = useBootStore.getState().localUser?.name?.trim() || 'pratyush';
+    const user = rawUser.toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'pratyush';
+    term.write(`\x1b[1;32m${user}@mimi\x1b[0m:\x1b[1;34m${displayPath}\x1b[0m$ `);
   };
 
   const handleTabCompletion = (term: XTerm) => {

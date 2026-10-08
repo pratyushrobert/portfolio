@@ -18,6 +18,7 @@ import { useWindowStore } from '../../stores/useWindowStore';
 import { useBootStore } from '../../stores/useBootStore';
 import { useAdminAuth } from '../../lib/auth/adminAuth';
 import { AppLauncher } from './AppLauncher';
+import { AppLauncherPanel } from './AppLauncherPanel';
 import { QuickSettingsPanel } from './QuickSettingsPanel';
 import { CalendarPanel } from './CalendarPanel';
 import { getAppIcon } from '../../lib/icons';
@@ -36,7 +37,24 @@ interface NavigatorWithBattery extends Navigator {
   getBattery?: () => Promise<BatteryManagerLike>;
 }
 
-type ActivePanel = 'none' | 'launcher' | 'calendar' | 'quick_settings';
+type ActivePanel = 'none' | 'cyber_menu' | 'app_launcher' | 'calendar' | 'quick_settings';
+
+/* ================= 9-DOT MINIMAL APP LAUNCHER ICON ================= */
+function NineDotsIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
+      <circle cx="3.5" cy="3.5" r="1.5" />
+      <circle cx="9" cy="3.5" r="1.5" />
+      <circle cx="14.5" cy="3.5" r="1.5" />
+      <circle cx="3.5" cy="9" r="1.5" />
+      <circle cx="9" cy="9" r="1.5" />
+      <circle cx="14.5" cy="9" r="1.5" />
+      <circle cx="3.5" cy="14.5" r="1.5" />
+      <circle cx="9" cy="14.5" r="1.5" />
+      <circle cx="14.5" cy="14.5" r="1.5" />
+    </svg>
+  );
+}
 
 /* ================= COMPACT INTERACTIVE SYSTEM CLOCK BUTTON ================= */
 function SystemClockButton({
@@ -328,8 +346,103 @@ export function TopPanel() {
   const [activePanel, setActivePanel] = useState<ActivePanel>('none');
 
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const appLauncherRef = useRef<HTMLButtonElement>(null);
   const clockRef = useRef<HTMLButtonElement>(null);
   const trayRef = useRef<HTMLButtonElement>(null);
+
+  // Shared moving liquid glass indicator state
+  const runningGroupRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [activePill, setActivePill] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  // Custom liquid glass tooltip state
+  const [tooltip, setTooltip] = useState<{
+    text: string;
+    x: number;
+    y: number;
+    placement: 'bottom' | 'top' | 'right' | 'left';
+  } | null>(null);
+
+  const showTooltip = (text: string, targetEl: HTMLElement) => {
+    const rect = targetEl.getBoundingClientRect();
+    if (panelPosition === 'top') {
+      setTooltip({
+        text,
+        x: Math.round(rect.left + rect.width / 2),
+        y: Math.round(rect.bottom + 8),
+        placement: 'bottom',
+      });
+    } else if (panelPosition === 'bottom') {
+      setTooltip({
+        text,
+        x: Math.round(rect.left + rect.width / 2),
+        y: Math.round(rect.top - 8),
+        placement: 'top',
+      });
+    } else if (panelPosition === 'left') {
+      setTooltip({
+        text,
+        x: Math.round(rect.right + 8),
+        y: Math.round(rect.top + rect.height / 2),
+        placement: 'right',
+      });
+    } else {
+      setTooltip({
+        text,
+        x: Math.round(rect.left - 8),
+        y: Math.round(rect.top + rect.height / 2),
+        placement: 'left',
+      });
+    }
+  };
+
+  const hideTooltip = () => {
+    setTooltip(null);
+  };
+
+  // Measure and position shared active indicator smoothly
+  useEffect(() => {
+    const updateActivePill = () => {
+      const activeWindow = windows.find((w) => w.isFocused && !w.isMinimized);
+      if (!activeWindow) {
+        setActivePill(null);
+        return;
+      }
+
+      const btn = buttonRefs.current[activeWindow.id];
+      const group = runningGroupRef.current;
+      if (!btn || !group) {
+        setActivePill(null);
+        return;
+      }
+
+      const groupRect = group.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+
+      if (btnRect.width > 0 && btnRect.height > 0) {
+        setActivePill({
+          left: Math.round(btnRect.left - groupRect.left),
+          top: Math.round(btnRect.top - groupRect.top),
+          width: Math.round(btnRect.width),
+          height: Math.round(btnRect.height),
+        });
+      }
+    };
+
+    updateActivePill();
+    const frame = requestAnimationFrame(updateActivePill);
+
+    window.addEventListener('resize', updateActivePill);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', updateActivePill);
+    };
+  }, [windows, panelPosition, panelStyle]);
 
   const isVertical = panelPosition === 'left' || panelPosition === 'right';
 
@@ -339,14 +452,18 @@ export function TopPanel() {
       const target = e.target as HTMLElement;
       if (
         target.closest('.liquid-glass-flyout') ||
+        target.closest('.app-launcher-panel') ||
+        target.closest('.cyber-tools-menu') ||
         target.closest('.app-launcher') ||
         target.closest('.panel-button.launcher') ||
+        target.closest('.panel-9dot-btn') ||
         target.closest('.panel-clock-button') ||
         target.closest('.panel-tray-pill')
       ) {
         return;
       }
       setActivePanel('none');
+      hideTooltip();
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -357,6 +474,7 @@ export function TopPanel() {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setActivePanel('none');
+        hideTooltip();
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -364,6 +482,7 @@ export function TopPanel() {
   }, []);
 
   const handlePinnedClick = (appId: string, appName: string) => {
+    hideTooltip();
     setActivePanel('none');
     const existing = windows.find((w) => w.appId === appId);
     if (existing) {
@@ -392,6 +511,7 @@ export function TopPanel() {
   };
 
   const handleWindowClick = (w: WindowState) => {
+    hideTooltip();
     setActivePanel('none');
     if (w.isMinimized) {
       restoreWindow(w.id);
@@ -423,27 +543,47 @@ export function TopPanel() {
           } as React.CSSProperties
         }
       >
-        {/* Left Section: Main Launcher */}
+        {/* Left Section: MimiOS Cyber & System Tools */}
         <div className="panel-left">
           <button
             ref={launcherRef}
             type="button"
-            className={`panel-button launcher ${activePanel === 'launcher' ? 'active' : ''}`}
+            className={`panel-button launcher ${activePanel === 'cyber_menu' ? 'active' : ''}`}
             onClick={() =>
-              setActivePanel((prev) => (prev === 'launcher' ? 'none' : 'launcher'))
+              setActivePanel((prev) => (prev === 'cyber_menu' ? 'none' : 'cyber_menu'))
             }
-            aria-expanded={activePanel === 'launcher'}
-            aria-haspopup="true"
-            aria-label="Applications Menu"
-            title="Applications Menu"
+            onMouseEnter={(e) => showTooltip('Cyber & System Tools', e.currentTarget)}
+            onMouseLeave={hideTooltip}
+            aria-expanded={activePanel === 'cyber_menu'}
+            aria-haspopup="dialog"
+            aria-label="MimiOS Cyber & System Tools"
           >
             <Menu size={16} />
           </button>
         </div>
 
-        {/* Center Section: Pinned Core Applications & Running Window Tabs */}
+        {/* Center Section: 9-Dot Launcher, Pinned Core Apps & Running Window Tabs */}
         <div className="panel-center">
           <div className="panel-center-content">
+            {/* 9-Dot Central App Launcher Button */}
+            <button
+              ref={appLauncherRef}
+              type="button"
+              className={`panel-9dot-btn ${activePanel === 'app_launcher' ? 'active' : ''}`}
+              onClick={() =>
+                setActivePanel((prev) => (prev === 'app_launcher' ? 'none' : 'app_launcher'))
+              }
+              onMouseEnter={(e) => showTooltip('Applications Launcher', e.currentTarget)}
+              onMouseLeave={hideTooltip}
+              aria-expanded={activePanel === 'app_launcher'}
+              aria-haspopup="dialog"
+              aria-label="Applications Launcher"
+            >
+              <NineDotsIcon size={16} />
+            </button>
+
+            <div className="panel-center-divider" aria-hidden="true" />
+
             {/* Pinned Applications */}
             <div className="panel-pinned-group" role="group" aria-label="Pinned Applications">
               {CORE_PINNED_APPS.map((app) => {
@@ -456,8 +596,12 @@ export function TopPanel() {
                     key={app.id}
                     type="button"
                     className={`panel-pinned-btn ${isRunning ? 'is-running' : ''} ${isFocused ? 'is-focused' : ''}`}
-                    onClick={() => handlePinnedClick(app.id, app.name)}
-                    title={`${app.name}${isRunning ? (isFocused ? ' (Active)' : ' (Running)') : ''}`}
+                    onClick={() => {
+                      hideTooltip();
+                      handlePinnedClick(app.id, app.name);
+                    }}
+                    onMouseEnter={(e) => showTooltip(app.name, e.currentTarget)}
+                    onMouseLeave={hideTooltip}
                     aria-label={`Open ${app.name}`}
                   >
                     <IconComp size={16} />
@@ -472,21 +616,48 @@ export function TopPanel() {
             {/* Running Window Tabs */}
             {windows.length > 0 && (
               <div
+                ref={runningGroupRef}
                 className="panel-button-group"
                 role="group"
                 aria-label="Running Applications"
               >
+                {/* Shared Moving Liquid Glass Active Indicator */}
+                <div
+                  className={`panel-active-indicator ${activePill ? 'visible' : ''}`}
+                  style={
+                    activePill
+                      ? {
+                          transform: `translate3d(${activePill.left}px, ${activePill.top}px, 0)`,
+                          width: `${activePill.width}px`,
+                          height: `${activePill.height}px`,
+                        }
+                      : undefined
+                  }
+                  aria-hidden="true"
+                >
+                  <div className="panel-active-indicator-highlight" />
+                  <div className="panel-active-indicator-reflection" />
+                </div>
+
                 {windows.map((w) => {
                   const isActive = w.isFocused && !w.isMinimized;
                   const isMinimized = w.isMinimized;
                   return (
                     <button
                       key={w.id}
+                      ref={(el) => {
+                        buttonRefs.current[w.id] = el;
+                      }}
                       type="button"
                       className={`panel-button window-btn ${isActive ? 'focused' : ''} ${isMinimized ? 'minimized' : ''}`}
-                      onClick={() => handleWindowClick(w)}
-                      title={`${w.title}${isMinimized ? ' (minimized)' : isActive ? ' (active)' : ''}`}
+                      onClick={() => {
+                        hideTooltip();
+                        handleWindowClick(w);
+                      }}
+                      onMouseEnter={(e) => showTooltip(w.title, e.currentTarget)}
+                      onMouseLeave={hideTooltip}
                       aria-pressed={isActive}
+                      aria-label={`${w.title}${isActive ? ' (active)' : isMinimized ? ' (minimized)' : ''}`}
                     >
                       {renderWindowIcon(w)}
                       <span className="panel-btn-label">{w.title}</span>
@@ -525,10 +696,17 @@ export function TopPanel() {
       </header>
 
       {/* Flyout Panels (Direction-aware and Bounds-clamped) */}
-      {activePanel === 'launcher' && (
+      {activePanel === 'cyber_menu' && (
         <AppLauncher
           onClose={() => setActivePanel('none')}
           anchorRef={launcherRef}
+        />
+      )}
+
+      {activePanel === 'app_launcher' && (
+        <AppLauncherPanel
+          onClose={() => setActivePanel('none')}
+          anchorRef={appLauncherRef}
         />
       )}
 
@@ -544,6 +722,20 @@ export function TopPanel() {
           onClose={() => setActivePanel('none')}
           anchorRef={trayRef}
         />
+      )}
+
+      {/* Liquid Glass Floating Taskbar Tooltip */}
+      {tooltip && (
+        <div
+          className={`panel-liquid-tooltip from-${tooltip.placement}`}
+          style={{
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+          }}
+          role="tooltip"
+        >
+          {tooltip.text}
+        </div>
       )}
     </>
   );

@@ -1,1 +1,10 @@
 /* App.css - Desktop shell styles (minimal, most styles in index.css and component CSS) */
+
+.mimios-os-root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #06070a;
+}

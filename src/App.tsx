@@ -9,6 +9,7 @@ import {
   BootError,
 } from './components/boot';
 import { Desktop } from './components/desktop/Desktop';
+import { Wallpaper } from './components/desktop/Wallpaper';
 import './App.css';
 
 export type AppPhase = BootPhase;
@@ -34,21 +35,6 @@ function App() {
     case 'mimios_splash':
       return <MimiOSSplash onComplete={() => setPhase('login')} />;
 
-    case 'login':
-      return (
-        <LoginScreen
-          onLoginSuccess={() => setPhase('welcome')}
-          onPowerOff={() => setPhase('powered_off')}
-        />
-      );
-
-    case 'welcome':
-      return (
-        <WelcomeScreen
-          onComplete={() => setPhase('desktop')}
-        />
-      );
-
     case 'error':
       return (
         <BootError
@@ -58,9 +44,30 @@ function App() {
         />
       );
 
+    case 'login':
+    case 'welcome':
     case 'desktop':
     default:
-      return <Desktop />;
+      return (
+        <div className="mimios-os-root">
+          <Wallpaper />
+
+          {(phase === 'welcome' || phase === 'desktop') && (
+            <Desktop />
+          )}
+
+          {phase === 'welcome' && (
+            <WelcomeScreen onComplete={() => setPhase('desktop')} />
+          )}
+
+          {phase === 'login' && (
+            <LoginScreen
+              onLoginSuccess={() => setPhase('welcome')}
+              onPowerOff={() => setPhase('powered_off')}
+            />
+          )}
+        </div>
+      );
   }
 }
 

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Wallpaper } from './Wallpaper';
 import { TopPanel } from './TopPanel';
 import { DesktopIcons } from './DesktopIcons';
 import { DesktopContextMenu } from './DesktopContextMenu';
@@ -206,7 +205,6 @@ export function Desktop() {
       onContextMenu={handleContextMenu}
       onPointerDown={handleDesktopPointerDown}
     >
-      <Wallpaper />
       <LiquidGlassClock className={`desktop-glass-clock position-${panelPosition}`} />
       <TopPanel />
       <DesktopIcons
@@ -262,7 +260,7 @@ export function Desktop() {
 function WindowContent({ appId, windowId, appParams, onOpenRequest }: { appId: string; windowId: string; appParams?: Record<string, unknown>; onOpenRequest?: (request: DesktopOpenRequest) => void }) {
   switch (appId) {
     case 'terminal':
-      return <Terminal windowId={windowId} onOpenRequest={onOpenRequest} />;
+      return <Terminal windowId={windowId} appParams={appParams} onOpenRequest={onOpenRequest} />;
     case 'files':
       return <FileManager windowId={windowId} appParams={appParams} onOpenRequest={onOpenRequest} />;
     case 'text-viewer':

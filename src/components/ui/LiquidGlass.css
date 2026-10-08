@@ -30,13 +30,13 @@
     135deg,
     rgba(255, 255, 255, 0.16) 0%,
     rgba(255, 255, 255, 0.05) 40%,
-    rgba(22, 26, 36, 0.52) 100%
+    rgba(18, 20, 26, 0.52) 100%
   );
   --liquid-glass-btn-active: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.22) 0%,
     rgba(255, 255, 255, 0.08) 40%,
-    rgba(28, 34, 48, 0.68) 100%
+    rgba(20, 22, 28, 0.68) 100%
   );
 
   --liquid-glass-border: rgba(255, 255, 255, 0.16);
@@ -351,23 +351,34 @@
   height: 32px;
   padding: 0;
   border-radius: 8px;
-  border: 1px solid var(--liquid-glass-border-subtle);
-  background: var(--liquid-glass-btn-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(14, 17, 24, 0.28) 100%
+  );
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  color: rgba(255, 255, 255, 0.82);
   cursor: pointer;
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow:
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.2);
   outline: none;
   flex-shrink: 0;
 }
 
 .panel-pinned-btn:hover {
-  background: var(--liquid-glass-btn-hover);
-  border-color: rgba(255, 255, 255, 0.26);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(18, 22, 32, 0.38) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
   transform: translateY(-1px);
 }
@@ -379,39 +390,49 @@
 .panel-pinned-btn.is-running::after {
   content: '';
   position: absolute;
-  bottom: 2px;
+  bottom: 2.5px;
   left: 50%;
   transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
+  width: 3.5px;
+  height: 3.5px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.4);
 }
 
 .desktop-panel.vertical .panel-pinned-btn.is-running::after {
   bottom: auto;
-  left: 2px;
+  left: 2.5px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 .panel-pinned-btn.is-focused {
-  background: var(--liquid-glass-btn-active);
-  border-color: var(--liquid-glass-border-focused);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(18, 20, 26, 0.45) 70%,
+    rgba(12, 14, 18, 0.65) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
+  box-shadow:
+    inset 0 1px 0.8px rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0.8px rgba(0, 0, 0, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .panel-pinned-btn.is-focused::after {
   background: #ffffff;
-  width: 10px;
+  width: 8px;
   border-radius: 2px;
   height: 2px;
 }
 
 .desktop-panel.vertical .panel-pinned-btn.is-focused::after {
   width: 2px;
-  height: 10px;
+  height: 8px;
 }
 
 .panel-center-divider {
@@ -485,60 +506,273 @@
 
 /* Open Application Tabs in Dock */
 .panel-button-group {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
   flex: 1;
   overflow-x: auto;
   scrollbar-width: none;
+  padding: 1px 0;
+}
+
+.desktop-panel.vertical .panel-button-group {
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .panel-button-group::-webkit-scrollbar {
   display: none;
 }
 
+/* Shared Moving Liquid Glass Active Indicator */
+.panel-active-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(18, 20, 26, 0.45) 70%,
+    rgba(12, 14, 18, 0.65) 100%
+  );
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1.2px 1px 0 rgba(255, 255, 255, 0.36),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+              width 0.46s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.46s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.25s ease;
+  will-change: transform, width, opacity;
+}
+
+.panel-active-indicator.visible {
+  opacity: 1;
+}
+
+/* Specular Upper-Edge Reflection on Moving Active Indicator */
+.panel-active-indicator-highlight {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.panel-active-indicator-reflection {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  right: 2px;
+  height: 40%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 100%
+  );
+  border-radius: 7px 7px 0 0;
+  pointer-events: none;
+}
+
+/* Floating Liquid Glass Tile Application Item */
 .panel-button.window-btn {
   position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   height: 32px;
   width: auto;
-  min-width: 34px;
+  min-width: 36px;
   max-width: 170px;
   padding: 0 10px;
   gap: 7px;
   border-radius: 8px;
-}
-
-.panel-button.window-btn.focused {
-  background: var(--liquid-glass-btn-active);
-  border-color: rgba(255, 255, 255, 0.32);
-  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(14, 17, 24, 0.25) 100%
+  );
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  color: rgba(255, 255, 255, 0.82);
+  font-family: var(--font-ui, var(--sans));
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
   box-shadow:
-    inset 0 1.2px 1px rgba(255, 255, 255, 0.42),
-    0 2px 10px rgba(0, 0, 0, 0.35);
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.22),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  user-select: none;
+  outline: none;
 }
 
-/* Subtle Active Underline Pill */
+.desktop-panel.vertical .panel-button.window-btn {
+  width: 100%;
+  max-width: none;
+  justify-content: flex-start;
+}
+
+.panel-button.window-btn:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(16, 18, 24, 0.34) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+/* When active / focused: the shared moving indicator glides directly behind it */
+.panel-button.window-btn.focused {
+  background: transparent;
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: none;
+}
+
 .panel-button.window-btn.focused::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 10px;
-  right: 10px;
-  height: 2px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), #ffffff, rgba(255, 255, 255, 0.3));
-  border-radius: 2px;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+  display: none;
+}
+
+.panel-button.window-btn.focused .panel-btn-label {
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.panel-button.window-btn.focused .panel-btn-icon {
+  color: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 
 .panel-button.window-btn.minimized {
-  opacity: 0.65;
+  opacity: 0.5;
+  filter: grayscale(20%);
 }
 
 .panel-button.window-btn.minimized:hover {
-  opacity: 1;
+  opacity: 0.88;
+  filter: none;
+}
+
+/* ================= MIMIOS LIQUID GLASS TOOLTIP ================= */
+.panel-liquid-tooltip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(14, 17, 24, 0.78) 70%,
+    rgba(8, 10, 15, 0.92) 100%
+  );
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0.8px rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0.8px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+  font-family: var(--font-ui, var(--sans));
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.panel-liquid-tooltip.from-bottom {
+  transform: translate(-50%, 0);
+  animation: tooltipAppearBottom 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.panel-liquid-tooltip.from-top {
+  transform: translate(-50%, -100%);
+  animation: tooltipAppearTop 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.panel-liquid-tooltip.from-right {
+  transform: translate(0, -50%);
+  animation: tooltipAppearRight 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.panel-liquid-tooltip.from-left {
+  transform: translate(-100%, -50%);
+  animation: tooltipAppearLeft 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tooltipAppearBottom {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -3px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes tooltipAppearTop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 3px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+}
+
+@keyframes tooltipAppearRight {
+  from {
+    opacity: 0;
+    transform: translate(3px, -50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+@keyframes tooltipAppearLeft {
+  from {
+    opacity: 0;
+    transform: translate(calc(-100% - 3px), -50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-100%, -50%);
+  }
 }
 
 .panel-btn-icon {
@@ -1329,3 +1563,757 @@
   text-overflow: ellipsis;
   max-width: 100%;
 }
+
+/* ==========================================================================
+   9-DOT CENTRAL APP LAUNCHER DOCK BUTTON
+   ========================================================================== */
+.panel-9dot-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  background: var(--liquid-glass-btn-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.3);
+  outline: none;
+  flex-shrink: 0;
+}
+
+.panel-9dot-btn:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1.2px 0.8px rgba(255, 255, 255, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.desktop-panel.vertical .panel-9dot-btn:hover {
+  transform: translateX(1px);
+}
+
+.panel-9dot-btn.active {
+  background: var(--liquid-glass-btn-active);
+  border-color: var(--liquid-glass-border-focused);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1.2px 1px rgba(255, 255, 255, 0.45),
+    0 0 12px rgba(255, 255, 255, 0.15);
+}
+
+/* ==========================================================================
+   MIMIOS APPLICATION LAUNCHER PANEL (9-DOT GRID FLYOUT)
+   ========================================================================== */
+.app-launcher-panel {
+  position: fixed;
+  z-index: 500;
+  width: 470px;
+  max-width: calc(100vw - 24px);
+  max-height: 540px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(18, 20, 26, 0.48) 25%,
+    rgba(14, 16, 22, 0.6) 75%,
+    rgba(10, 12, 16, 0.68) 100%
+  );
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.48),
+    0 8px 24px rgba(0, 0, 0, 0.32),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: liquidPanelUnfold 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  color: #ffffff;
+  font-family: var(--font-ui, var(--sans));
+  user-select: none;
+}
+
+/* Specular Upper Sheen for Launcher Panel */
+.app-launcher-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 30%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0.55) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.app-launcher-header {
+  padding: 16px 20px 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-launcher-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-launcher-badge {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.app-launcher-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.app-launcher-count {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.app-launcher-search-box {
+  margin-top: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.app-launcher-search-icon {
+  position: absolute;
+  left: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.app-launcher-search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 34px 0 36px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: var(--font-ui, var(--sans));
+  outline: none;
+  box-shadow:
+    inset 0 1px 1px 0 rgba(0, 0, 0, 0.25),
+    inset 0 -1px 0.5px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.app-launcher-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.app-launcher-search-input:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.app-launcher-search-input:focus {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.12),
+    inset 0 1px 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.app-launcher-search-box:focus-within .app-launcher-search-icon {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.app-launcher-search-clear {
+  position: absolute;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.app-launcher-search-clear:hover {
+  color: #ffffff;
+}
+
+/* Left-aligned application grid wrap */
+.app-launcher-grid-wrap {
+  padding: 16px 20px 18px 20px;
+  overflow-y: auto;
+  max-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Applications start from the LEFT side and flow naturally across rows */
+.app-launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 88px));
+  justify-content: start;
+  align-content: start;
+  gap: 16px 14px;
+  width: 100%;
+}
+
+.app-launcher-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+}
+
+/* Individual Application Tile: Staggered Liquid Glass Layer */
+.app-grid-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 86px;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  border-radius: 14px;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: appTileReveal 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--idx, 0) * 18ms);
+}
+
+.app-grid-tile:hover {
+  transform: translateY(-2px);
+}
+
+.app-grid-tile:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 0.1s;
+}
+
+.app-grid-squircle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 35%,
+    rgba(255, 255, 255, 0.02) 65%,
+    rgba(14, 18, 28, 0.35) 100%
+  );
+  backdrop-filter: blur(12px) saturate(170%);
+  -webkit-backdrop-filter: blur(12px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1.2px 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.3),
+    0 6px 16px rgba(0, 0, 0, 0.28),
+    0 1.5px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+/* Specular Upper Edge Reflection inside the Tile */
+.app-grid-squircle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+  .app-grid-tile:hover .app-grid-squircle {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.24) 0%,
+    rgba(255, 255, 255, 0.09) 35%,
+    rgba(255, 255, 255, 0.04) 65%,
+    rgba(18, 20, 26, 0.42) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow:
+    inset 0 1.4px 1.2px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.3),
+    0 10px 22px rgba(0, 0, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.22);
+}
+
+.app-grid-tile:focus-visible .app-grid-squircle,
+.app-grid-tile.is-selected .app-grid-squircle {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 0 1.4px 1.2px 0 rgba(255, 255, 255, 0.65),
+    0 0 0 2px rgba(255, 255, 255, 0.3),
+    0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.app-grid-symbol {
+  color: rgba(255, 255, 255, 0.95);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+}
+
+.app-grid-tile:hover .app-grid-symbol {
+  transform: scale(1.05);
+  color: #ffffff;
+}
+
+.app-grid-running-pip {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.9);
+}
+
+.app-grid-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 82px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  transition: color 0.2s ease;
+}
+
+.app-grid-tile:hover .app-grid-label {
+  color: #ffffff;
+}
+
+.app-launcher-footer {
+  padding: 10px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-launcher-shortcuts {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.app-launcher-shortcuts kbd {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+@keyframes appTileReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-launcher-panel,
+  .cyber-tools-menu,
+  .app-grid-tile {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-launcher-panel {
+    width: calc(100vw - 20px);
+    max-height: 82vh;
+  }
+
+  .app-launcher-header {
+    padding: 12px 14px 10px 14px;
+  }
+
+  .app-launcher-grid-wrap {
+    padding: 12px 14px;
+  }
+
+  .app-launcher-grid {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 80px));
+    gap: 12px 10px;
+  }
+
+  .app-grid-tile {
+    width: 78px;
+    gap: 6px;
+  }
+
+  .app-grid-squircle {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+  }
+
+  .app-grid-label {
+    max-width: 74px;
+    font-size: 10.5px;
+  }
+}
+
+/* ==========================================================================
+   MIMIOS CYBER & SYSTEM TOOLS MENU (BURGER DOCK FLYOUT)
+   ========================================================================== */
+.cyber-tools-menu {
+  position: fixed;
+  z-index: 500;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  max-height: 560px;
+  background: linear-gradient(
+    145deg,
+    rgba(18, 20, 24, 0.88) 0%,
+    rgba(12, 14, 18, 0.95) 100%
+  );
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.7),
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    inset 0 1.2px 1px rgba(255, 255, 255, 0.35),
+    inset 0 -1.2px 1px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: liquidPanelUnfold 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  color: #ffffff;
+  font-family: var(--font-ui, var(--sans));
+  user-select: none;
+}
+
+.cyber-tools-menu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.cyber-tools-header {
+  padding: 14px 16px 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cyber-tools-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cyber-tools-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cyber-tools-shield-icon {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cyber-tools-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.cyber-tools-sys-badge {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cyber-tools-search {
+  margin-top: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cyber-tools-search-icon {
+  position: absolute;
+  left: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.cyber-tools-search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-family: var(--font-ui, var(--sans));
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.cyber-tools-search input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.cyber-tools-list-wrap {
+  padding: 8px 10px;
+  overflow-y: auto;
+  max-height: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cyber-tools-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12.5px;
+}
+
+.cyber-tool-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.16s ease;
+  outline: none;
+}
+
+.cyber-tool-item:hover,
+.cyber-tool-item.selected {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.cyber-tool-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.cyber-tool-item:hover .cyber-tool-icon-box,
+.cyber-tool-item.selected .cyber-tool-icon-box {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.cyber-tool-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cyber-tool-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cyber-tool-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cyber-tool-badge {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cyber-tool-badge.badge-online {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.cyber-tool-badge.badge-simulation {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cyber-tool-badge.badge-mission {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cyber-tool-desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.48);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cyber-tools-footer {
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cyber-tools-shortcuts {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.cyber-tools-shortcuts kbd {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cyber-tools-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cyber-power-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cyber-power-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.cyber-power-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+

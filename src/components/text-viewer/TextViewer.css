@@ -246,7 +246,7 @@
 
 @media (prefers-color-scheme: dark) {
   .tv-copy-btn {
-    background: var(--btn-bg, #1e1e2e);
+    background: var(--btn-bg, #121318);
     border-color: var(--border);
   }
   .tv-copy-btn:hover {

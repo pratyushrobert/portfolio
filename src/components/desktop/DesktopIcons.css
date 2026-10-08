@@ -1,66 +1,192 @@
+/* ==========================================================================
+   MimiOS Minimal Liquid-Glass Desktop Icons
+   Centered vertical column for Terminal & About Me.
+   Strict adherence to neutral dark/graphite palette: NO purple, NO neon.
+   ========================================================================== */
+
 .os-desktop-icons {
   position: fixed;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 10;
+  z-index: 20;
 }
 
-.os-desktop-icon {
+.os-desktop-minimal-column {
   position: absolute;
+  left: clamp(24px, 5vw, 64px);
+  top: clamp(60px, 14vh, 120px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  width: 80px;
-  padding: 8px 4px;
-  border-radius: 8px;
-  cursor: pointer;
+  gap: 24px;
   pointer-events: auto;
-  transition: background 0.1s ease, transform 0.1s ease;
   user-select: none;
+  animation: desktopColumnFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.os-desktop-icon:hover {
-  background: var(--icon-hover, rgba(137, 180, 250, 0.1));
+.os-desktop-minimal-column.position-top {
+  top: calc(var(--panel-height, 42px) + clamp(24px, 5vh, 48px));
+  left: clamp(24px, 5vw, 64px);
 }
 
-.os-desktop-icon.selected {
-  background: var(--icon-selected, rgba(137, 180, 250, 0.2));
-  border: 1px solid var(--accent, #89b4fa);
+.os-desktop-minimal-column.position-left {
+  left: calc(var(--panel-height, 42px) + clamp(20px, 4vw, 36px));
+  top: clamp(60px, 14vh, 120px);
 }
 
-.os-desktop-icon:active {
-  transform: scale(0.95);
+.os-desktop-minimal-column.position-bottom,
+.os-desktop-minimal-column.position-right {
+  left: clamp(24px, 5vw, 64px);
+  top: clamp(60px, 14vh, 120px);
 }
 
-.os-desktop-icon-image {
+@keyframes desktopColumnFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Individual Desktop Glass Icon Card */
+.desktop-glass-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 84px;
+  cursor: pointer;
+  outline: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.desktop-glass-icon:hover {
+  transform: translateY(-3px);
+}
+
+.desktop-glass-icon:active {
+  transform: translateY(-1px) scale(0.97);
+}
+
+.desktop-glass-icon:focus-visible .desktop-glass-box {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 3px;
+}
+
+/* Pure Liquid Glass Box */
+.desktop-glass-box {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  color: var(--text-primary, #cdd6f4);
+  width: 60px;
+  height: 60px;
+  border-radius: 17px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(14, 17, 24, 0.45) 70%,
+    rgba(8, 10, 15, 0.65) 100%
+  );
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1.2px 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1.2px 1px 0 rgba(0, 0, 0, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
-.os-desktop-icon-label {
-  font-size: 11px;
+/* Specular Upper-Edge Reflection */
+.desktop-glass-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.desktop-glass-icon:hover .desktop-glass-box {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.06) 30%,
+    rgba(18, 22, 32, 0.52) 70%,
+    rgba(10, 13, 19, 0.72) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1.5px 1.2px 0 rgba(255, 255, 255, 0.52),
+    inset 0 -1.2px 1px 0 rgba(0, 0, 0, 0.45),
+    0 12px 30px rgba(0, 0, 0, 0.55),
+    0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.desktop-glass-icon.selected .desktop-glass-box {
+  border-color: rgba(255, 255, 255, 0.48);
+  box-shadow:
+    inset 0 1.5px 1.2px 0 rgba(255, 255, 255, 0.58),
+    0 0 0 2px rgba(255, 255, 255, 0.22),
+    0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* Crisp Off-White Symbols */
+.desktop-glass-symbol {
+  color: rgba(255, 255, 255, 0.95);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  transition: transform 0.2s ease;
+}
+
+.desktop-glass-icon:hover .desktop-glass-symbol {
+  transform: scale(1.06);
+}
+
+/* Typography Underneath */
+.desktop-glass-label {
+  font-family: var(--font-ui, var(--sans));
+  font-size: 12px;
   font-weight: 500;
-  color: var(--text-primary, #cdd6f4);
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.92);
   text-align: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  line-height: 1.3;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 8px rgba(0, 0, 0, 0.65);
+  padding: 1px 8px;
+  border-radius: 4px;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-/* Selection rectangle */
-.os-desktop-selection {
-  position: absolute;
-  border: 1px dashed var(--accent, #89b4fa);
-  background: rgba(137, 180, 250, 0.1);
-  pointer-events: none;
-  z-index: 100;
+.desktop-glass-icon.selected .desktop-glass-label {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  text-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os-desktop-minimal-column,
+  .desktop-glass-icon,
+  .desktop-glass-box,
+  .desktop-glass-symbol {
+    animation: none !important;
+    transition: none !important;
+  }
 }

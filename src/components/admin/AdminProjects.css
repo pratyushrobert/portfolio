@@ -606,6 +606,6 @@
 
 @media (prefers-color-scheme: dark) {
   .admin-form-card {
-    background: var(--card-bg, #1e1e2e);
+    background: var(--card-bg, #14161c);
   }
 }

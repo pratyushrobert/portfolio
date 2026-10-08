@@ -41,12 +41,7 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onLoginSuccess, onPowerOff }: LoginScreenProps) {
   const { setLocalUser, localUser } = useBootStore();
-  const wallpaper = useDesktopStore((state) => state.wallpaper);
-  const wallpaperPosition = useDesktopStore((state) => state.wallpaperPosition) || 'center';
-  const wallpaperSize = useDesktopStore((state) => state.wallpaperSize) || 'cover';
   const wallpaperOverlay = useDesktopStore((state) => state.wallpaperOverlay) || '#000000';
-  const wallpaperColor = useDesktopStore((state) => state.wallpaperColor) || '#08090d';
-  const wallpaperBrightness = useDesktopStore((state) => state.wallpaperBrightness ?? 100);
   const wallpaperOverlayOpacity = useDesktopStore((state) => state.wallpaperOverlayOpacity ?? 30);
   const setBackgroundConfig = useDesktopStore((state) => state.setBackgroundConfig);
 
@@ -185,7 +180,7 @@ export function LoginScreen({ onLoginSuccess, onPowerOff }: LoginScreenProps) {
     } else {
       setTimeout(() => {
         onLoginSuccess();
-      }, 100);
+      }, 200);
     }
   };
 
@@ -202,7 +197,6 @@ export function LoginScreen({ onLoginSuccess, onPowerOff }: LoginScreenProps) {
       : 'Battery: Ready';
 
   const initialLetter = name.trim().charAt(0).toUpperCase();
-  const hasCustomWallpaper = Boolean(wallpaper && wallpaper.trim());
 
   // Derive login screen dimming opacity from centralized admin config
   const loginDimOpacity = Math.min(1, Math.max(0.2, (wallpaperOverlayOpacity / 100) * 1.25));
@@ -214,20 +208,7 @@ export function LoginScreen({ onLoginSuccess, onPowerOff }: LoginScreenProps) {
       aria-modal="true"
       aria-label="MimiOS System Login"
     >
-      {/* Layer 1: Authoritative Desktop Wallpaper with Admin Brightness */}
-      <div
-        className={`login-wallpaper ${!hasCustomWallpaper ? 'has-fallback' : ''}`}
-        style={{
-          backgroundColor: wallpaperColor,
-          backgroundImage: hasCustomWallpaper ? `url("${wallpaper}")` : undefined,
-          backgroundSize: wallpaperSize,
-          backgroundPosition: wallpaperPosition,
-          filter: `brightness(${wallpaperBrightness}%)`,
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Layer 2: Dark Translucent Overlay Derived from Admin Config */}
+      {/* Dark Translucent Overlay Derived from Admin Config */}
       <div
         className="login-dim-overlay"
         style={{
