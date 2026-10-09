@@ -1,0 +1,876 @@
+/* ==========================================================================
+   MimiAI — The Cyber Ninja Cat Application Styles
+   MimiOS Liquid Glass Architecture • Charcoal / Graphite / Slate Neutral Palette
+   ========================================================================== */
+
+.mimi-ai-window {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: var(--liquid-glass-surface, linear-gradient(145deg, rgba(20, 24, 34, 0.82) 0%, rgba(12, 15, 22, 0.92) 100%));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: #f1f5f9;
+  font-family: var(--sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  position: relative;
+  overflow: hidden;
+  user-select: text;
+}
+
+/* ================= SIDEBAR (CONVERSATION HISTORY) ================= */
+.mimi-ai-sidebar {
+  width: 250px;
+  min-width: 250px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 13, 19, 0.65);
+  border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+
+.mimi-ai-sidebar.collapsed {
+  margin-left: -250px;
+  pointer-events: none;
+}
+
+.mimi-ai-sidebar-header {
+  padding: 14px 14px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mimi-ai-sidebar-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mimi-ai-sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mimi-ai-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mimi-ai-icon-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mimi-ai-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mimi-ai-conv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: #94a3b8;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.mimi-ai-conv-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+}
+
+.mimi-ai-conv-item.active {
+  background: rgba(56, 189, 248, 0.12);
+  color: #ffffff;
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+.mimi-ai-conv-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 6px;
+}
+
+.mimi-ai-conv-delete {
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.mimi-ai-conv-item:hover .mimi-ai-conv-delete {
+  opacity: 1;
+}
+
+.mimi-ai-conv-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.mimi-ai-sidebar-empty {
+  font-size: 11.5px;
+  color: #64748b;
+  text-align: center;
+  padding: 24px 12px;
+}
+
+/* ================= MAIN CHAT CONTENT AREA ================= */
+.mimi-ai-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+/* Top App Header Bar */
+.mimi-ai-header {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  background: rgba(14, 18, 26, 0.45);
+}
+
+.mimi-ai-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mimi-ai-header-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mimi-ai-header-title h2 {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mimi-ai-header-title span {
+  font-size: 10.5px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mimi-ai-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Model Status Pill */
+.mimi-ai-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-family: var(--mono, monospace);
+  font-weight: 500;
+  background: rgba(18, 24, 36, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.mimi-ai-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.mimi-ai-status-dot.warning {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+/* ================= CHAT MESSAGE STREAM ================= */
+.mimi-ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+/* Empty Hero / Welcome Screen */
+.mimi-ai-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px 16px 20px;
+  margin: auto 0;
+}
+
+.mimi-ai-welcome-hero {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.mimi-ai-welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  color: #38bdf8;
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mimi-ai-welcome h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+
+.mimi-ai-welcome p {
+  font-size: 13px;
+  color: #94a3b8;
+  max-width: 520px;
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+/* Quick Prompt Suggestion Chips */
+.mimi-ai-suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  max-width: 640px;
+  width: 100%;
+}
+
+.mimi-ai-suggestion-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(18, 22, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.mimi-ai-suggestion-card:hover {
+  background: rgba(28, 34, 50, 0.75);
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.mimi-ai-suggestion-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: #38bdf8;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mimi-ai-suggestion-text {
+  font-size: 12px;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+/* ================= MESSAGE BUBBLE ROWS ================= */
+.mimi-ai-row {
+  display: flex;
+  width: 100%;
+  animation: mimiFadeIn 0.2s ease-out;
+}
+
+@keyframes mimiFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* User Message: Dark neutral right-aligned pill */
+.mimi-ai-row.user {
+  justify-content: flex-end;
+}
+
+.mimi-ai-bubble-user {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 12px 12px 2px 12px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0.5px rgba(255, 255, 255, 0.12);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Assistant Message: Liquid Glass card with avatar header */
+.mimi-ai-row.assistant {
+  justify-content: flex-start;
+}
+
+.mimi-ai-bubble-assistant {
+  max-width: 86%;
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(14, 18, 26, 0.65);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.4), inset 0 1px 0.5px rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.mimi-ai-avatar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.mimi-ai-body-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mimi-ai-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.mimi-ai-sender-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mimi-ai-sender-ninja-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  letter-spacing: 0.02em;
+}
+
+.mimi-ai-bubble-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mimi-ai-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.mimi-ai-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Typing / Streaming Cursor */
+.mimi-ai-typing-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: #38bdf8;
+  vertical-align: middle;
+  margin-left: 3px;
+  animation: mimiBlink 0.9s infinite ease-in-out;
+  border-radius: 1px;
+}
+
+@keyframes mimiBlink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* ================= MARKDOWN & CODE BLOCKS ================= */
+.mimi-ai-markdown {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+.mimi-ai-markdown p {
+  margin: 0 0 10px;
+}
+
+.mimi-ai-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.mimi-ai-markdown h1,
+.mimi-ai-markdown h2,
+.mimi-ai-markdown h3,
+.mimi-ai-markdown h4 {
+  color: #f8fafc;
+  font-weight: 600;
+  margin: 14px 0 6px;
+  line-height: 1.3;
+}
+
+.mimi-ai-markdown h1 { font-size: 16px; }
+.mimi-ai-markdown h2 { font-size: 14.5px; }
+.mimi-ai-markdown h3 { font-size: 13.5px; }
+
+.mimi-ai-markdown ul,
+.mimi-ai-markdown ol {
+  margin: 4px 0 10px 20px;
+  padding: 0;
+}
+
+.mimi-ai-markdown li {
+  margin-bottom: 4px;
+}
+
+.mimi-ai-markdown inline code,
+.mimi-ai-markdown :not(pre) > code {
+  font-family: var(--mono, monospace);
+  font-size: 11.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #38bdf8;
+}
+
+.mimi-ai-markdown blockquote {
+  margin: 8px 0;
+  padding: 6px 12px;
+  border-left: 3px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.06);
+  border-radius: 0 4px 4px 0;
+  color: #cbd5e1;
+}
+
+/* Custom Safe Code Block Container */
+.mimi-ai-code-block {
+  margin: 10px 0;
+  border-radius: 8px;
+  background: #0d1017;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.mimi-ai-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  background: #141822;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mimi-ai-code-lang {
+  font-family: var(--mono, monospace);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: lowercase;
+}
+
+.mimi-ai-code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-family: var(--sans, sans-serif);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.mimi-ai-code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.mimi-ai-code-copy-btn.copied {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.mimi-ai-code-pre {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-family: var(--mono, 'Fira Code', 'Cascadia Code', Consolas, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+.mimi-ai-code-pre code {
+  font-family: inherit;
+}
+
+/* ================= INPUT SECTION ================= */
+.mimi-ai-footer {
+  padding: 10px 16px 14px;
+  background: rgba(10, 13, 20, 0.55);
+  border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mimi-ai-input-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 10px 6px 12px;
+  border-radius: 10px;
+  background: rgba(16, 21, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mimi-ai-input-box:focus-within {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(56, 189, 248, 0.2);
+}
+
+.mimi-ai-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: none;
+  max-height: 140px;
+  min-height: 24px;
+  padding: 4px 0;
+}
+
+.mimi-ai-textarea::placeholder {
+  color: #64748b;
+}
+
+.mimi-ai-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: #38bdf8;
+  border: none;
+  color: #0b1120;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.mimi-ai-submit-btn:hover:not(:disabled) {
+  background: #7dd3fc;
+  transform: translateY(-1px);
+}
+
+.mimi-ai-submit-btn:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: #475569;
+  cursor: not-allowed;
+}
+
+.mimi-ai-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.mimi-ai-stop-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff;
+}
+
+.mimi-ai-input-hints {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 10.5px;
+  color: #64748b;
+}
+
+/* Error Toast / Alert */
+.mimi-ai-error-banner {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ================= ACTION BADGES & CONFIRMATION CARDS ================= */
+.mimi-ai-action-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin: 6px 0 10px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  max-width: 100%;
+}
+
+.mimi-ai-action-badge.preparing,
+.mimi-ai-action-badge.executing {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.08);
+  color: #7dd3fc;
+}
+
+.mimi-ai-action-badge.confirmed {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08);
+  color: #6ee7b7;
+}
+
+.mimi-ai-action-badge.failed {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+}
+
+.mimi-ai-action-badge.cancelled {
+  border-color: rgba(148, 163, 184, 0.3);
+  background: rgba(148, 163, 184, 0.06);
+  color: #94a3b8;
+}
+
+.mimi-ai-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mimi-ai-action-icon .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.mimi-ai-action-text {
+  font-family: var(--sans, sans-serif);
+  font-weight: 500;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* Action Confirmation Card */
+.mimi-ai-action-confirm-card {
+  margin: 8px 0 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(20, 24, 33, 0.95);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(245, 158, 11, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mimi-ai-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+.mimi-ai-confirm-header .warning-icon {
+  color: #fbbf24;
+  flex-shrink: 0;
+}
+
+.mimi-ai-confirm-body {
+  font-size: 12.5px;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.mimi-ai-confirm-body strong {
+  color: #ffffff;
+  font-family: var(--mono, monospace);
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mimi-ai-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mimi-ai-confirm-btn {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: #f59e0b;
+  border: none;
+  color: #0f172a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mimi-ai-confirm-btn:hover {
+  background: #fbbf24;
+  transform: translateY(-1px);
+}
+
+.mimi-ai-cancel-btn {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mimi-ai-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+

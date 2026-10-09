@@ -27,6 +27,7 @@ import {
   ContactApp,
 } from '../portfolio';
 import { SnakeGame } from '../game/SnakeGame';
+import { MimiAIApp } from '../ai/MimiAIApp';
 import { getAppIcon } from '../../lib/icons';
 import type { DesktopOpenRequest, DesktopIcon } from '../../types/desktop';
 import './Desktop.css';
@@ -62,8 +63,8 @@ export function Desktop() {
           icon: getAppIcon(request.appId, request.mimeType),
           x: 100 + Math.random() * 200,
           y: 100 + Math.random() * 150,
-          width: request.appId === 'snake' ? 440 : 800,
-          height: request.appId === 'snake' ? 520 : 600,
+          width: request.appId === 'snake' ? 440 : (request.appId === 'mimi-ai' || request.appId === 'ai') ? 840 : 800,
+          height: request.appId === 'snake' ? 520 : (request.appId === 'mimi-ai' || request.appId === 'ai') ? 620 : 600,
           isMinimized: false,
           isMaximized: false,
         },
@@ -104,8 +105,8 @@ export function Desktop() {
         icon: getAppIcon(appId),
         x: 100 + Math.random() * 150,
         y: 80 + Math.random() * 100,
-        width: appId === 'settings' ? 760 : appId === 'snake' ? 440 : 800,
-        height: appId === 'settings' ? 520 : appId === 'snake' ? 520 : 600,
+        width: appId === 'settings' ? 760 : appId === 'snake' ? 440 : (appId === 'mimi-ai' || appId === 'ai') ? 840 : 800,
+        height: appId === 'settings' ? 520 : appId === 'snake' ? 520 : (appId === 'mimi-ai' || appId === 'ai') ? 620 : 600,
         isMinimized: false,
         isMaximized: false,
       },
@@ -259,6 +260,9 @@ export function Desktop() {
 
 function WindowContent({ appId, windowId, appParams, onOpenRequest }: { appId: string; windowId: string; appParams?: Record<string, unknown>; onOpenRequest?: (request: DesktopOpenRequest) => void }) {
   switch (appId) {
+    case 'mimi-ai':
+    case 'ai':
+      return <MimiAIApp windowId={windowId} appParams={appParams} onOpenRequest={onOpenRequest} />;
     case 'terminal':
       return <Terminal windowId={windowId} appParams={appParams} onOpenRequest={onOpenRequest} />;
     case 'files':

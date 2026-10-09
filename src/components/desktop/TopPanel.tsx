@@ -330,6 +330,7 @@ function SettingsTrayButton() {
 
 /* ================= MAIN TOP PANEL / DOCK COMPONENT ================= */
 const CORE_PINNED_APPS = [
+  { id: 'mimi-ai', name: 'MimiAI', iconName: 'mimi-ai' },
   { id: 'terminal', name: 'Terminal', iconName: 'terminal' },
   { id: 'files', name: 'File Manager', iconName: 'files' },
   { id: 'about', name: 'About Me', iconName: 'about' },
@@ -502,8 +503,8 @@ export function TopPanel() {
         icon: getAppIcon(appId),
         x: 100 + Math.random() * 80,
         y: 80 + Math.random() * 60,
-        width: 800,
-        height: 580,
+        width: appId === 'mimi-ai' || appId === 'ai' ? 840 : 800,
+        height: appId === 'mimi-ai' || appId === 'ai' ? 620 : 580,
         isMinimized: false,
         isMaximized: false,
       });

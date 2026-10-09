@@ -144,3 +144,58 @@ export const assetMetadataSchema = z.object({
   tags: z.array(boundedString(50)).max(50),
   sort_order: z.number().int().min(0).max(100000),
 }).strict();
+
+export const aiToolCallSchema = z.object({
+  id: z.string().min(1).max(128),
+  type: z.literal('function').default('function'),
+  function: z.object({
+    name: z.string().min(1).max(64),
+    arguments: z.string().max(4096),
+  }),
+}).strict();
+
+export const aiChatMessageSchema = z.discriminatedUnion('role', [
+  z.object({
+    role: z.literal('user'),
+    content: z.string().trim().min(1).max(8192),
+  }).strict(),
+  z.object({
+    role: z.literal('system'),
+    content: z.string().trim().min(1).max(8192),
+  }).strict(),
+  z.object({
+    role: z.literal('assistant'),
+    content: z.string().trim().max(8192).optional(),
+    tool_calls: z.array(aiToolCallSchema).optional(),
+  }).strict(),
+  z.object({
+    role: z.literal('tool'),
+    tool_call_id: z.string().min(1).max(128),
+    content: z.string().trim().min(1).max(8192),
+  }).strict(),
+]).superRefine((data, ctx) => {
+  if (data.role === 'assistant') {
+    const hasContent = typeof data.content === 'string' && data.content.trim().length > 0;
+    const hasTools = Array.isArray(data.tool_calls) && data.tool_calls.length > 0;
+    if (!hasContent && !hasTools) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_small,
+        minimum: 1,
+        type: 'string',
+        inclusive: true,
+        message: 'String must contain at least 1 character(s)',
+        path: ['content'],
+      });
+    }
+  }
+});
+
+export const aiChatRequestSchema = z.object({
+  messages: z.array(aiChatMessageSchema).min(1).max(30),
+  stream: z.boolean().optional().default(true),
+  temperature: z.number().min(0).max(2).optional(),
+  max_tokens: z.number().int().min(1).max(4096).optional(),
+  tools_enabled: z.boolean().optional().default(true),
+}).strict();
+
+

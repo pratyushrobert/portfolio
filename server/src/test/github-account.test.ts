@@ -269,10 +269,16 @@ describe('GitHub Account Discovery & Remote Browsing', () => {
     expect(res2.statusCode).toBe(200);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
-    // Call with ?refresh=true -> re-fetches
-    const res3 = await app.inject({ method: 'GET', url: '/api/github/repos?refresh=true' });
-    expect(res3.statusCode).toBe(200);
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    // Call with ?refresh=true after cooldown window -> re-fetches
+    const realDateNow = Date.now;
+    try {
+      Date.now = () => realDateNow() + 15_000;
+      const res3 = await app.inject({ method: 'GET', url: '/api/github/repos?refresh=true' });
+      expect(res3.statusCode).toBe(200);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      Date.now = realDateNow;
+    }
   });
 
   it('gracefully falls back to cached repositories when GitHub rate limits (403)', async () => {
@@ -303,7 +309,7 @@ describe('GitHub Account Discovery & Remote Browsing', () => {
     expect(res2.json().data[0].name).toBe('SecureVault');
   });
 
-  it('returns 403 RATE_LIMITED if rate limited on cold start with no cache', async () => {
+  it('gracefully returns fallback repositories with 200 if rate limited on cold start with no cache', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       return new Response(JSON.stringify({ message: 'API rate limit exceeded' }), {
         status: 403,
@@ -312,16 +318,141 @@ describe('GitHub Account Discovery & Remote Browsing', () => {
     });
 
     const res = await app.inject({ method: 'GET', url: '/api/github/repos' });
-    expect(res.statusCode).toBe(403);
-    expect(res.json().code).toBe('RATE_LIMITED');
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.length).toBeGreaterThan(0);
+    expect(body.data[0].name).toBeDefined();
   });
 
-  it('returns 502 NETWORK_ERROR if fetch fails on cold start with no cache', async () => {
+  it('GET /api/github/repos is publicly accessible without admin authentication (regression test)', async () => {
+    // 1. Unauthenticated request succeeds with 200 and data
+    const res = await app.inject({ method: 'GET', url: '/api/github/repos' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+
+    // 2. Admin routes remain strictly protected (require auth)
+    const adminRes = await app.inject({ method: 'GET', url: '/api/admin/projects' });
+    expect(adminRes.statusCode).toBe(401);
+  });
+
+  it('gracefully returns fallback repositories with 200 if fetch encounters network error on cold start for configured portfolio owner', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('DNS resolution failed'));
 
     const res = await app.inject({ method: 'GET', url: '/api/github/repos' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toBe(true);
+    expect(Array.isArray(res.json().data)).toBe(true);
+    expect(res.json().data.length).toBeGreaterThan(0);
+    expect(res.json().data[0].name).toBe('portfolio-server');
+  });
+
+  it('returns 502 NETWORK_ERROR with source github_upstream if fetch fails on cold start for user without fallback', async () => {
+    const configOther = { ...config, GITHUB_USERNAME: 'otherdeveloper' };
+    const otherApp = await buildApp({ database: db, config: configOther });
+    await otherApp.ready();
+
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('DNS resolution failed'));
+
+    const res = await otherApp.inject({ method: 'GET', url: '/api/github/repos' });
     expect(res.statusCode).toBe(502);
     expect(res.json().code).toBe('NETWORK_ERROR');
+    expect(res.json().source).toBe('github_upstream');
+
+    await otherApp.close();
+  });
+
+  it('returns 504 TIMEOUT with source github_upstream when upstream request times out for user without fallback', async () => {
+    const configOther = { ...config, GITHUB_USERNAME: 'otherdeveloper' };
+    const otherApp = await buildApp({ database: db, config: configOther });
+    await otherApp.ready();
+
+    const timeoutErr = new Error('The operation was aborted due to timeout');
+    timeoutErr.name = 'TimeoutError';
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(timeoutErr);
+
+    const res = await otherApp.inject({ method: 'GET', url: '/api/github/repos' });
+    expect(res.statusCode).toBe(504);
+    expect(res.json().code).toBe('TIMEOUT');
+    expect(res.json().source).toBe('github_upstream');
+
+    await otherApp.close();
+  });
+
+  it('cooldown prevents redundant upstream calls when ?refresh=true is called repeatedly in rapid succession', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      return new Response(JSON.stringify([mockReposPage1[0]]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    // 1st call with refresh=true -> triggers upstream fetch
+    const res1 = await app.inject({ method: 'GET', url: '/api/github/repos?refresh=true' });
+    expect(res1.statusCode).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    // 2nd call with refresh=true within 10s cooldown -> returns cached without calling upstream again
+    const res2 = await app.inject({ method: 'GET', url: '/api/github/repos?refresh=true' });
+    expect(res2.statusCode).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('coalesces concurrent requests to a single in-flight upstream fetch', async () => {
+    let fetchCount = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      fetchCount++;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return new Response(JSON.stringify([mockReposPage1[0]]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    const [res1, res2] = await Promise.all([
+      app.inject({ method: 'GET', url: '/api/github/repos?refresh=true' }),
+      app.inject({ method: 'GET', url: '/api/github/repos?refresh=true' }),
+    ]);
+
+    expect(res1.statusCode).toBe(200);
+    expect(res2.statusCode).toBe(200);
+    expect(fetchCount).toBe(1);
+  });
+
+  it('preserves existing cached repositories when ?refresh=true encounters network error', async () => {
+    let callCount = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      callCount++;
+      if (callCount === 1) {
+        return new Response(JSON.stringify([mockReposPage1[0]]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error('Connection reset by peer');
+    });
+
+    // Populate initial cache
+    const res1 = await app.inject({ method: 'GET', url: '/api/github/repos' });
+    expect(res1.statusCode).toBe(200);
+    expect(res1.json().data.length).toBe(1);
+
+    // Advance time past cooldown
+    const realDateNow = Date.now;
+    try {
+      Date.now = () => realDateNow() + 15_000;
+
+      // Force refresh which encounters network error -> gracefully falls back to existing cache
+      const res2 = await app.inject({ method: 'GET', url: '/api/github/repos?refresh=true' });
+      expect(res2.statusCode).toBe(200);
+      expect(res2.json().data.length).toBe(1);
+      expect(res2.json().data[0].name).toBe('SecureVault');
+    } finally {
+      Date.now = realDateNow;
+    }
   });
 
   it('DOES NOT create any project records when discovering repositories', async () => {

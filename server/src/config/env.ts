@@ -33,6 +33,9 @@ const configSchema = z.object({
   UPLOAD_DIR: z.string().min(1).default('./uploads'),
   GITHUB_TOKEN: z.string().trim().optional().default(''),
   GITHUB_USERNAME: z.string().trim().min(1).default('pratyushrobert'),
+  NVIDIA_API_KEY: z.string().trim().optional().default(''),
+  NVIDIA_NIM_BASE_URL: z.string().trim().default('https://integrate.api.nvidia.com/v1'),
+  NVIDIA_NIM_MODEL: z.string().trim().default('meta/llama-3.1-70b-instruct'),
 });
 
 export type RuntimeConfig = z.infer<typeof configSchema>;

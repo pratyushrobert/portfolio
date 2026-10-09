@@ -23,6 +23,7 @@ import {
   Mail,
   Gamepad2,
 } from 'lucide-react';
+import { MimiMascotIcon } from '../components/ai/MimiMascot';
 
 export type AppIconName =
   | 'terminal'
@@ -46,7 +47,9 @@ export type AppIconName =
   | 'about'
   | 'contact'
   | 'resume'
-  | 'snake';
+  | 'snake'
+  | 'mimi-ai'
+  | 'ai';
 
 export const APP_ICONS: Record<AppIconName, React.ComponentType<{ size?: number; className?: string }>> = {
   terminal: Terminal,
@@ -71,6 +74,8 @@ export const APP_ICONS: Record<AppIconName, React.ComponentType<{ size?: number;
   contact: Mail,
   resume: FileText,
   snake: Gamepad2,
+  'mimi-ai': MimiMascotIcon,
+  ai: MimiMascotIcon,
 };
 
 // Common aliases and legacy identifier lookups

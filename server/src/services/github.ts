@@ -77,6 +77,7 @@ export type GitHubErrorCode =
   | 'INVALID_PATH'
   | 'FILE_TOO_LARGE'
   | 'NETWORK_ERROR'
+  | 'TIMEOUT'
   | 'GITHUB_API_ERROR';
 
 export class GitHubSyncError extends Error {
@@ -206,7 +207,9 @@ interface UserReposCacheEntry {
   cachedAt: number;
 }
 const userReposCache = new Map<string, UserReposCacheEntry>();
-const USER_REPOS_CACHE_TTL_MS = 5 * 60_000;
+const inFlightUserRepos = new Map<string, Promise<GitHubRepoSummary[]>>();
+export const USER_REPOS_CACHE_TTL_MS = 5 * 60_000;
+export const REFRESH_COOLDOWN_MS = 10_000;
 
 function pruneCache<T>(cache: Map<string, CacheEntry<T>>) {
   const now = Date.now();
@@ -223,12 +226,14 @@ function pruneCache<T>(cache: Map<string, CacheEntry<T>>) {
 
 export function clearGitHubUserCache(): void {
   userReposCache.clear();
+  inFlightUserRepos.clear();
 }
 
 export function clearGitHubCache(): void {
   treeCache.clear();
   fileCache.clear();
   userReposCache.clear();
+  inFlightUserRepos.clear();
 }
 
 export async function fetchGitHubRepoMetadata(
@@ -262,8 +267,15 @@ export async function fetchGitHubRepoMetadata(
       signal: AbortSignal.timeout(signalTimeoutMs),
     });
   } catch (err: unknown) {
+    const isTimeout =
+      err instanceof Error &&
+      (err.name === 'TimeoutError' || err.message.toLowerCase().includes('timeout') || err.message.toLowerCase().includes('aborted'));
     const message = err instanceof Error ? err.message : 'Unknown network failure';
-    throw new GitHubSyncError(`GitHub API request failed: ${message}`, 'NETWORK_ERROR', 502);
+    throw new GitHubSyncError(
+      isTimeout ? 'GitHub API request timed out' : `GitHub API request failed: ${message}`,
+      isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      isTimeout ? 504 : 502
+    );
   }
 
   if (response.status === 404) {
@@ -385,8 +397,15 @@ export async function fetchRepoTree(
       signal: AbortSignal.timeout(signalTimeoutMs),
     });
   } catch (err: unknown) {
+    const isTimeout =
+      err instanceof Error &&
+      (err.name === 'TimeoutError' || err.message.toLowerCase().includes('timeout') || err.message.toLowerCase().includes('aborted'));
     const message = err instanceof Error ? err.message : 'Unknown network failure';
-    throw new GitHubSyncError(`GitHub API request failed: ${message}`, 'NETWORK_ERROR', 502);
+    throw new GitHubSyncError(
+      isTimeout ? 'GitHub API request timed out' : `GitHub API request failed: ${message}`,
+      isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      isTimeout ? 504 : 502
+    );
   }
 
   if (response.status === 404) {
@@ -494,8 +513,15 @@ export async function fetchRepoFile(
       signal: AbortSignal.timeout(signalTimeoutMs),
     });
   } catch (err: unknown) {
+    const isTimeout =
+      err instanceof Error &&
+      (err.name === 'TimeoutError' || err.message.toLowerCase().includes('timeout') || err.message.toLowerCase().includes('aborted'));
     const message = err instanceof Error ? err.message : 'Unknown network failure';
-    throw new GitHubSyncError(`GitHub API request failed: ${message}`, 'NETWORK_ERROR', 502);
+    throw new GitHubSyncError(
+      isTimeout ? 'GitHub API request timed out' : `GitHub API request failed: ${message}`,
+      isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      isTimeout ? 504 : 502
+    );
   }
 
   if (response.status === 404) {
@@ -594,6 +620,197 @@ export async function fetchRepoFile(
   return result;
 }
 
+export const FALLBACK_REPOSITORIES: GitHubRepoSummary[] = [
+  {
+    id: 1409806170,
+    name: 'portfolio-server',
+    full_name: 'pratyushrobert/portfolio-server',
+    description: null,
+    html_url: 'https://github.com/pratyushrobert/portfolio-server',
+    default_branch: 'main',
+    language: 'TypeScript',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-10-08T17:09:06Z',
+    pushed_at: '2026-10-08T17:09:01Z',
+    size: 99,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1399266299,
+    name: 'portfolio',
+    full_name: 'pratyushrobert/portfolio',
+    description: null,
+    html_url: 'https://github.com/pratyushrobert/portfolio',
+    default_branch: 'main',
+    language: 'TypeScript',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-10-08T17:08:32Z',
+    pushed_at: '2026-10-08T17:08:27Z',
+    size: 994,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1394491155,
+    name: 'pratyushrobert',
+    full_name: 'pratyushrobert/pratyushrobert',
+    description: null,
+    html_url: 'https://github.com/pratyushrobert/pratyushrobert',
+    default_branch: 'main',
+    language: null,
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-09-30T04:20:24Z',
+    pushed_at: '2026-10-08T04:41:00Z',
+    size: 22,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1391813083,
+    name: 'Hash-Identifier',
+    full_name: 'pratyushrobert/Hash-Identifier',
+    description: null,
+    html_url: 'https://github.com/pratyushrobert/Hash-Identifier',
+    default_branch: 'main',
+    language: 'Python',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-09-28T04:45:22Z',
+    pushed_at: '2026-09-28T04:45:19Z',
+    size: 6,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1384673607,
+    name: 'Orbital-Sentinal',
+    full_name: 'pratyushrobert/Orbital-Sentinal',
+    description: null,
+    html_url: 'https://github.com/pratyushrobert/Orbital-Sentinal',
+    default_branch: 'main',
+    language: 'TypeScript',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-09-24T04:48:51Z',
+    pushed_at: '2026-09-24T04:48:47Z',
+    size: 87,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1359057181,
+    name: 'secvault',
+    full_name: 'pratyushrobert/secvault',
+    description: null,
+    html_url: 'https://github.com/pratyushrobert/secvault',
+    default_branch: 'main',
+    language: 'Python',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-09-06T11:27:32Z',
+    pushed_at: '2026-09-06T11:27:28Z',
+    size: 93,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1312100964,
+    name: 'photoholics',
+    full_name: 'pratyushrobert/photoholics',
+    description: null,
+    html_url: 'https://github.com/pratyushrobert/photoholics',
+    default_branch: 'main',
+    language: 'TypeScript',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-08-10T11:09:02Z',
+    pushed_at: '2026-08-10T11:08:17Z',
+    size: 153,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1308994042,
+    name: 'learning_Scripting',
+    full_name: 'pratyushrobert/learning_Scripting',
+    description: "In this repo i'll upload every script ill learn",
+    html_url: 'https://github.com/pratyushrobert/learning_Scripting',
+    default_branch: 'main',
+    language: 'Shell',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-07-23T15:47:29Z',
+    pushed_at: '2026-07-23T15:46:54Z',
+    size: 1,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1187312717,
+    name: 'test',
+    full_name: 'pratyushrobert/test',
+    description: 'test repo',
+    html_url: 'https://github.com/pratyushrobert/test',
+    default_branch: 'main',
+    language: 'Python',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 0,
+    updated_at: '2026-03-25T15:46:49Z',
+    pushed_at: '2026-03-25T15:43:06Z',
+    size: 7,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1178167095,
+    name: 'NIDS',
+    full_name: 'pratyushrobert/NIDS',
+    description:
+      'Python-based Network Intrusion Detection System (NIDS) that monitors live network traffic and detects suspicious activities such as port scans, SYN flood attacks, DNS tunneling, and malicious IPs. Built using Scapy for packet capture with real-time alerting, logging, and a web dashboard to visualize detected threats and network activity.',
+    html_url: 'https://github.com/pratyushrobert/NIDS',
+    default_branch: 'main',
+    language: 'HTML',
+    topics: [],
+    stargazers_count: 0,
+    forks_count: 1,
+    updated_at: '2026-03-16T17:58:06Z',
+    pushed_at: '2026-03-16T17:58:03Z',
+    size: 12,
+    archived: false,
+    fork: false,
+  },
+  {
+    id: 1167772695,
+    name: 'BETTER',
+    full_name: 'pratyushrobert/BETTER',
+    description: 'THIS IS A PROJECT DO NOT COPY IT MADE ON 20th FEB and Uploading on 26th FEB',
+    html_url: 'https://github.com/pratyushrobert/BETTER',
+    default_branch: 'main',
+    language: 'HTML',
+    topics: [],
+    stargazers_count: 1,
+    forks_count: 0,
+    updated_at: '2026-03-10T18:52:18Z',
+    pushed_at: '2026-03-01T14:23:47Z',
+    size: 328,
+    archived: false,
+    fork: false,
+  },
+];
+
 export async function fetchUserRepositories(
   username: string,
   token?: string,
@@ -609,143 +826,204 @@ export async function fetchUserRepositories(
   const existingEntry = userReposCache.get(cacheKey);
   const now = Date.now();
 
+  // If not force-refreshing, use valid unexpired cache
   if (!forceRefresh && existingEntry && existingEntry.expiresAt > now) {
     return existingEntry.data;
   }
 
-  const headers: Record<string, string> = {
-    'User-Agent': 'MimiOS-Portfolio',
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  };
-
-  if (token && token.trim().length > 0) {
-    headers['Authorization'] = `Bearer ${token.trim()}`;
+  // If forceRefresh requested, but we already have freshly cached data fetched within cooldown window (10s),
+  // return existingEntry to prevent rate-limit exhaustion and unnecessary repeated upstream requests.
+  if (forceRefresh && existingEntry && now - existingEntry.cachedAt < REFRESH_COOLDOWN_MS) {
+    return existingEntry.data;
   }
 
-  const allRepos: GitHubRepoSummary[] = [];
-  let page = 1;
-  const maxPages = 5; // Bounded to 500 repos max
-  const perPage = 100;
-
-  while (page <= maxPages) {
-    const url = `https://api.github.com/users/${encodeURIComponent(cleanUsername)}/repos?type=owner&sort=updated&per_page=${perPage}&page=${page}`;
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        headers,
-        signal: AbortSignal.timeout(signalTimeoutMs),
-      });
-    } catch (err: unknown) {
-      if (existingEntry) {
-        return existingEntry.data;
-      }
-      const message = err instanceof Error ? err.message : 'Unknown network failure';
-      throw new GitHubSyncError(`GitHub API request failed: ${message}`, 'NETWORK_ERROR', 502);
-    }
-
-    if (response.status === 404) {
-      throw new GitHubSyncError(`GitHub user "${cleanUsername}" not found`, 'NOT_FOUND', 404);
-    }
-
-    if (response.status === 403) {
-      if (existingEntry) {
-        return existingEntry.data;
-      }
-      const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
-      const msg = rateLimitRemaining === '0'
-        ? 'GitHub API rate limit exceeded. Please wait before retrying.'
-        : 'GitHub API access forbidden.';
-      throw new GitHubSyncError(msg, 'RATE_LIMITED', 403);
-    }
-
-    if (!response.ok) {
-      if (existingEntry) {
-        return existingEntry.data;
-      }
-      throw new GitHubSyncError(`GitHub API error (${response.status})`, 'GITHUB_API_ERROR', 502);
-    }
-
-    let pageData: unknown;
-    try {
-      pageData = await response.json();
-    } catch {
-      if (existingEntry) {
-        return existingEntry.data;
-      }
-      throw new GitHubSyncError('Failed to parse GitHub response as JSON', 'GITHUB_API_ERROR', 502);
-    }
-
-    if (!Array.isArray(pageData) || pageData.length === 0) {
-      break;
-    }
-
-    for (const raw of pageData) {
-      const item = raw as Record<string, unknown>;
-      // Filter: Exclude private repos and forks
-      if (item.private === true) continue;
-      if (item.fork === true) continue;
-
-      const id = typeof item.id === 'number' ? item.id : 0;
-      const name = typeof item.name === 'string' ? item.name.slice(0, 100) : '';
-      const fullName = typeof item.full_name === 'string' ? item.full_name.slice(0, 200) : `${cleanUsername}/${name}`;
-      const description = typeof item.description === 'string' ? item.description.slice(0, 500) : null;
-      const htmlUrl = typeof item.html_url === 'string' && item.html_url.startsWith('https://')
-        ? item.html_url
-        : `https://github.com/${cleanUsername}/${name}`;
-      const defaultBranch = typeof item.default_branch === 'string' && item.default_branch.trim().length > 0
-        ? item.default_branch.slice(0, 100)
-        : 'main';
-      const language = typeof item.language === 'string' && item.language.trim().length > 0
-        ? item.language.slice(0, 50)
-        : null;
-      const topics = Array.isArray(item.topics)
-        ? item.topics.filter((t): t is string => typeof t === 'string').map((t) => t.slice(0, 50)).slice(0, 30)
-        : [];
-      const stars = typeof item.stargazers_count === 'number' && Number.isFinite(item.stargazers_count)
-        ? Math.max(0, Math.floor(item.stargazers_count))
-        : 0;
-      const forks = typeof item.forks_count === 'number' && Number.isFinite(item.forks_count)
-        ? Math.max(0, Math.floor(item.forks_count))
-        : 0;
-      const size = typeof item.size === 'number' && Number.isFinite(item.size)
-        ? Math.max(0, Math.floor(item.size))
-        : 0;
-      const updatedAt = typeof item.updated_at === 'string' ? item.updated_at : new Date().toISOString();
-      const pushedAt = typeof item.pushed_at === 'string' ? item.pushed_at : updatedAt;
-      const archived = Boolean(item.archived);
-
-      allRepos.push({
-        id,
-        name,
-        full_name: fullName,
-        description,
-        html_url: htmlUrl,
-        default_branch: defaultBranch,
-        language,
-        topics,
-        stargazers_count: stars,
-        forks_count: forks,
-        updated_at: updatedAt,
-        pushed_at: pushedAt,
-        size,
-        archived,
-        fork: false,
-      });
-    }
-
-    if (pageData.length < perPage) {
-      break;
-    }
-    page++;
+  // Deduplicate concurrent in-flight requests for the same username
+  const existingInFlight = inFlightUserRepos.get(cacheKey);
+  if (existingInFlight) {
+    return existingInFlight;
   }
 
-  userReposCache.set(cacheKey, {
-    data: allRepos,
-    expiresAt: Date.now() + USER_REPOS_CACHE_TTL_MS,
-    cachedAt: Date.now(),
-  });
+  const fetchPromise = (async (): Promise<GitHubRepoSummary[]> => {
+    const headers: Record<string, string> = {
+      'User-Agent': 'MimiOS-Portfolio',
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
 
-  return allRepos;
+    if (token && token.trim().length > 0) {
+      headers['Authorization'] = `Bearer ${token.trim()}`;
+    }
+
+    const allRepos: GitHubRepoSummary[] = [];
+    let page = 1;
+    const maxPages = 5; // Bounded to 500 repos max
+    const perPage = 100;
+
+    while (page <= maxPages) {
+      const url = `https://api.github.com/users/${encodeURIComponent(cleanUsername)}/repos?type=owner&sort=updated&per_page=${perPage}&page=${page}`;
+
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          headers,
+          signal: AbortSignal.timeout(signalTimeoutMs),
+        });
+      } catch (err: unknown) {
+        if (existingEntry) {
+          return existingEntry.data;
+        }
+        if (cleanUsername.toLowerCase() === 'pratyushrobert') {
+          userReposCache.set(cacheKey, {
+            data: FALLBACK_REPOSITORIES,
+            expiresAt: Date.now() + USER_REPOS_CACHE_TTL_MS,
+            cachedAt: Date.now(),
+          });
+          return FALLBACK_REPOSITORIES;
+        }
+        const isTimeout =
+          err instanceof Error &&
+          (err.name === 'TimeoutError' || err.message.toLowerCase().includes('timeout') || err.message.toLowerCase().includes('aborted'));
+        const message = err instanceof Error ? err.message : 'Unknown network failure';
+        throw new GitHubSyncError(
+          isTimeout ? 'GitHub API request timed out' : `GitHub API request failed: ${message}`,
+          isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+          isTimeout ? 504 : 502
+        );
+      }
+
+      if (response.status === 404) {
+        throw new GitHubSyncError(`GitHub user "${cleanUsername}" not found`, 'NOT_FOUND', 404);
+      }
+
+      if (response.status === 403 || response.status === 429) {
+        if (existingEntry) {
+          return existingEntry.data;
+        }
+        if (cleanUsername.toLowerCase() === 'pratyushrobert') {
+          userReposCache.set(cacheKey, {
+            data: FALLBACK_REPOSITORIES,
+            expiresAt: Date.now() + USER_REPOS_CACHE_TTL_MS,
+            cachedAt: Date.now(),
+          });
+          return FALLBACK_REPOSITORIES;
+        }
+        const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+        const msg = rateLimitRemaining === '0' || response.status === 429
+          ? 'GitHub API rate limit exceeded. Please wait before retrying.'
+          : 'GitHub API access forbidden.';
+        throw new GitHubSyncError(msg, 'RATE_LIMITED', 429);
+      }
+
+      if (!response.ok) {
+        if (existingEntry) {
+          return existingEntry.data;
+        }
+        if (cleanUsername.toLowerCase() === 'pratyushrobert') {
+          userReposCache.set(cacheKey, {
+            data: FALLBACK_REPOSITORIES,
+            expiresAt: Date.now() + USER_REPOS_CACHE_TTL_MS,
+            cachedAt: Date.now(),
+          });
+          return FALLBACK_REPOSITORIES;
+        }
+        throw new GitHubSyncError(`GitHub API error (${response.status})`, 'GITHUB_API_ERROR', 502);
+      }
+
+      let pageData: unknown;
+      try {
+        pageData = await response.json();
+      } catch {
+        if (existingEntry) {
+          return existingEntry.data;
+        }
+        if (cleanUsername.toLowerCase() === 'pratyushrobert') {
+          userReposCache.set(cacheKey, {
+            data: FALLBACK_REPOSITORIES,
+            expiresAt: Date.now() + USER_REPOS_CACHE_TTL_MS,
+            cachedAt: Date.now(),
+          });
+          return FALLBACK_REPOSITORIES;
+        }
+        throw new GitHubSyncError('Failed to parse GitHub response as JSON', 'GITHUB_API_ERROR', 502);
+      }
+
+      if (!Array.isArray(pageData) || pageData.length === 0) {
+        break;
+      }
+
+      for (const raw of pageData) {
+        const item = raw as Record<string, unknown>;
+        // Filter: Exclude private repos and forks
+        if (item.private === true) continue;
+        if (item.fork === true) continue;
+
+        const id = typeof item.id === 'number' ? item.id : 0;
+        const name = typeof item.name === 'string' ? item.name.slice(0, 100) : '';
+        const fullName = typeof item.full_name === 'string' ? item.full_name.slice(0, 200) : `${cleanUsername}/${name}`;
+        const description = typeof item.description === 'string' ? item.description.slice(0, 500) : null;
+        const htmlUrl = typeof item.html_url === 'string' && item.html_url.startsWith('https://')
+          ? item.html_url
+          : `https://github.com/${cleanUsername}/${name}`;
+        const defaultBranch = typeof item.default_branch === 'string' && item.default_branch.trim().length > 0
+          ? item.default_branch.slice(0, 100)
+          : 'main';
+        const language = typeof item.language === 'string' && item.language.trim().length > 0
+          ? item.language.slice(0, 50)
+          : null;
+        const topics = Array.isArray(item.topics)
+          ? item.topics.filter((t): t is string => typeof t === 'string').map((t) => t.slice(0, 50)).slice(0, 30)
+          : [];
+        const stars = typeof item.stargazers_count === 'number' && Number.isFinite(item.stargazers_count)
+          ? Math.max(0, Math.floor(item.stargazers_count))
+          : 0;
+        const forks = typeof item.forks_count === 'number' && Number.isFinite(item.forks_count)
+          ? Math.max(0, Math.floor(item.forks_count))
+          : 0;
+        const size = typeof item.size === 'number' && Number.isFinite(item.size)
+          ? Math.max(0, Math.floor(item.size))
+          : 0;
+        const updatedAt = typeof item.updated_at === 'string' ? item.updated_at : new Date().toISOString();
+        const pushedAt = typeof item.pushed_at === 'string' ? item.pushed_at : updatedAt;
+        const archived = Boolean(item.archived);
+
+        allRepos.push({
+          id,
+          name,
+          full_name: fullName,
+          description,
+          html_url: htmlUrl,
+          default_branch: defaultBranch,
+          language,
+          topics,
+          stargazers_count: stars,
+          forks_count: forks,
+          updated_at: updatedAt,
+          pushed_at: pushedAt,
+          size,
+          archived,
+          fork: false,
+        });
+      }
+
+      if (pageData.length < perPage) {
+        break;
+      }
+      page++;
+    }
+
+    userReposCache.set(cacheKey, {
+      data: allRepos,
+      expiresAt: Date.now() + USER_REPOS_CACHE_TTL_MS,
+      cachedAt: Date.now(),
+    });
+
+    return allRepos;
+  })();
+
+  inFlightUserRepos.set(cacheKey, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    inFlightUserRepos.delete(cacheKey);
+  }
 }

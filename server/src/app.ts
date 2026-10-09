@@ -22,6 +22,7 @@ import { portfolioAdminRoutes, portfolioRoutes } from './routes/portfolio.js';
 import { projectAdminRoutes, projectRoutes } from './routes/projects.js';
 import { githubRoutes } from './routes/github.js';
 import { skillAdminRoutes, skillRoutes } from './routes/skills.js';
+import { aiRoutes } from './routes/ai.js';
 
 export interface AppOptions {
   database: AppDatabase;
@@ -105,6 +106,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await fastify.register(certificateRoutes, { prefix: '/api/certificates', ...context });
   await fastify.register(assetRoutes, { prefix: '/api/assets', ...context });
   await fastify.register(configRoutes, { prefix: '/api/config', ...context });
+  await fastify.register(aiRoutes, { prefix: '/api/ai', ...context });
 
   await fastify.register(adminRoutes, { prefix: '/api/admin', ...context });
   await fastify.register(portfolioAdminRoutes, { prefix: '/api/admin/portfolio', ...context });

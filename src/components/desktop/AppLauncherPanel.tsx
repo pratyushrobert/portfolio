@@ -15,6 +15,7 @@ export interface RegisteredAppItem {
 }
 
 export const REGISTERED_APPS: RegisteredAppItem[] = [
+  { id: 'mimi-ai', name: 'MimiAI', iconName: 'mimi-ai', description: 'Cyber Ninja Cat AI companion' },
   { id: 'terminal', name: 'Terminal', iconName: 'terminal', description: 'System command shell' },
   { id: 'files', name: 'File Manager', iconName: 'files', description: 'Browse virtual filesystem' },
   { id: 'about', name: 'About Me', iconName: 'about', description: 'Developer biography & profile' },
@@ -82,8 +83,8 @@ export function AppLauncherPanel({ onClose, anchorRef }: AppLauncherPanelProps) 
         icon: iconComponent,
         x: 100 + Math.random() * 140,
         y: 80 + Math.random() * 100,
-        width: app.id === 'settings' ? 760 : app.id === 'snake' ? 440 : 800,
-        height: app.id === 'settings' ? 520 : app.id === 'snake' ? 520 : 600,
+        width: app.id === 'mimi-ai' ? 840 : app.id === 'settings' ? 760 : app.id === 'snake' ? 440 : 800,
+        height: app.id === 'mimi-ai' ? 620 : app.id === 'settings' ? 520 : app.id === 'snake' ? 520 : 600,
         isMinimized: false,
         isMaximized: false,
       },

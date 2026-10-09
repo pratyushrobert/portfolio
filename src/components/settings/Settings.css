@@ -258,6 +258,155 @@
   min-width: 220px;
 }
 
+/* Toggle Switch */
+.settings-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 38px;
+  height: 22px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.settings-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--code-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 999px;
+}
+
+.settings-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+}
+
+.settings-toggle input:checked + .settings-toggle-slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.settings-toggle input:checked + .settings-toggle-slider:before {
+  transform: translateX(16px);
+  background-color: #ffffff;
+}
+
+.settings-toggle input:focus-visible + .settings-toggle-slider {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Segmented Control for Taskbar Mode and Options */
+.settings-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  background: var(--code-bg, rgba(0, 0, 0, 0.28));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.settings-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 14px;
+  min-width: 114px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.settings-segmented-btn:hover:not(.active):not(:disabled) {
+  color: var(--text-h);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-segmented-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.settings-segmented-btn.active {
+  background: var(--window-content-bg, #14171f);
+  color: #f8fafc;
+  font-weight: 600;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.settings-segmented-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-segmented-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.settings-segmented-btn.active .settings-segmented-indicator {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  border-color: var(--accent);
+}
+
+/* Responsive row handling for narrow viewports */
+@media (max-width: 600px) {
+  .settings-row.settings-row-mode {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .settings-row.settings-row-mode .settings-segmented-control {
+    width: 100%;
+    display: flex;
+  }
+
+  .settings-row.settings-row-mode .settings-segmented-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
+
 /* Wallpaper Preview */
 .settings-wallpaper-box {
   width: 100%;

@@ -514,33 +514,46 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
                     <span>Show System Panel</span>
                     <span>Toggle visibility of the main taskbar</span>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={showPanel}
-                    onChange={togglePanel}
-                    style={{ width: 18, height: 18, cursor: 'pointer' }}
-                  />
+                  <label className="settings-toggle" title="Toggle System Panel">
+                    <input
+                      type="checkbox"
+                      checked={showPanel}
+                      onChange={togglePanel}
+                      aria-label="Toggle System Panel"
+                    />
+                    <span className="settings-toggle-slider" />
+                  </label>
                 </div>
 
-                <div className="settings-row">
+                <div className="settings-row settings-row-mode">
                   <div className="settings-row-label">
                     <span>Taskbar Mode</span>
                     <span>Choose between floating dock and edge-connected shell</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div
+                    className="settings-segmented-control"
+                    role="radiogroup"
+                    aria-label="Taskbar Mode"
+                  >
                     <button
                       type="button"
-                      className={`settings-btn settings-btn-sm ${panelStyle === 'floating' ? 'settings-btn-primary' : 'settings-btn-secondary'}`}
+                      role="radio"
+                      aria-checked={panelStyle === 'floating'}
+                      className={`settings-segmented-btn ${panelStyle === 'floating' ? 'active' : ''}`}
                       onClick={() => setPanelStyle('floating')}
                     >
-                      Floating Dock
+                      <span className="settings-segmented-indicator" />
+                      <span>Floating Dock</span>
                     </button>
                     <button
                       type="button"
-                      className={`settings-btn settings-btn-sm ${panelStyle === 'connected' ? 'settings-btn-primary' : 'settings-btn-secondary'}`}
+                      role="radio"
+                      aria-checked={panelStyle === 'connected'}
+                      className={`settings-segmented-btn ${panelStyle === 'connected' ? 'active' : ''}`}
                       onClick={() => setPanelStyle('connected')}
                     >
-                      Connected Edge
+                      <span className="settings-segmented-indicator" />
+                      <span>Connected Edge</span>
                     </button>
                   </div>
                 </div>

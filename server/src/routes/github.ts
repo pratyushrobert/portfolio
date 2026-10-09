@@ -31,10 +31,14 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
         return { success: true, data: repos };
       } catch (err: unknown) {
         if (err instanceof GitHubSyncError) {
-          return reply.status(err.statusCode).send({
+          // Upstream GitHub rate limits or errors must never be returned as 403 Forbidden.
+          // 403 implies client authorization failure; upstream rate limit is 429.
+          const status = err.statusCode === 403 ? 429 : err.statusCode;
+          return reply.status(status).send({
             success: false,
             error: err.message,
             code: err.code,
+            source: 'github_upstream',
           });
         }
         request.log.error({ err }, 'Failed to fetch user repositories');
@@ -42,6 +46,7 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
           success: false,
           error: 'Failed to communicate with GitHub API',
           code: 'NETWORK_ERROR',
+          source: 'github_upstream',
         });
       }
     },
@@ -60,10 +65,12 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
         return { success: true, data: meta };
       } catch (err: unknown) {
         if (err instanceof GitHubSyncError) {
-          return reply.status(err.statusCode).send({
+          const status = err.statusCode === 403 ? 429 : err.statusCode;
+          return reply.status(status).send({
             success: false,
             error: err.message,
             code: err.code,
+            source: 'github_upstream',
           });
         }
         request.log.error({ err }, 'Failed to fetch repository metadata');
@@ -71,6 +78,7 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
           success: false,
           error: 'Failed to communicate with GitHub API',
           code: 'NETWORK_ERROR',
+          source: 'github_upstream',
         });
       }
     },
@@ -90,10 +98,12 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
         return { success: true, data: items };
       } catch (err: unknown) {
         if (err instanceof GitHubSyncError) {
-          return reply.status(err.statusCode).send({
+          const status = err.statusCode === 403 ? 429 : err.statusCode;
+          return reply.status(status).send({
             success: false,
             error: err.message,
             code: err.code,
+            source: 'github_upstream',
           });
         }
         request.log.error({ err }, 'Failed to fetch repository contents');
@@ -101,6 +111,7 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
           success: false,
           error: 'Failed to communicate with GitHub repository service',
           code: 'NETWORK_ERROR',
+          source: 'github_upstream',
         });
       }
     },
@@ -120,10 +131,12 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
         return { success: true, data: file };
       } catch (err: unknown) {
         if (err instanceof GitHubSyncError) {
-          return reply.status(err.statusCode).send({
+          const status = err.statusCode === 403 ? 429 : err.statusCode;
+          return reply.status(status).send({
             success: false,
             error: err.message,
             code: err.code,
+            source: 'github_upstream',
           });
         }
         request.log.error({ err }, 'Failed to fetch repository file');
@@ -131,6 +144,7 @@ export async function githubRoutes(fastify: FastifyInstance, context: RouteConte
           success: false,
           error: 'Failed to communicate with GitHub repository service',
           code: 'NETWORK_ERROR',
+          source: 'github_upstream',
         });
       }
     },

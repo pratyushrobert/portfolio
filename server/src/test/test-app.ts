@@ -19,5 +19,8 @@ export function loadTestConfig(): RuntimeConfig {
     UPLOAD_DIR: './uploads-test',
     GITHUB_TOKEN: '',
     GITHUB_USERNAME: 'pratyushrobert',
+    NVIDIA_API_KEY: '',
+    NVIDIA_NIM_BASE_URL: 'https://integrate.api.nvidia.com/v1',
+    NVIDIA_NIM_MODEL: 'meta/llama-3.1-70b-instruct',
   };
 }
