@@ -23,7 +23,7 @@ export function computeFlyoutPlacement(options: FlyoutPositionOptions): FlyoutPl
   const {
     anchorRef,
     anchorEl = anchorRef?.current,
-    panelPosition = 'top',
+    panelPosition = 'bottom',
     preferredWidth = 360,
     preferredHeight = 460,
     align = 'start',

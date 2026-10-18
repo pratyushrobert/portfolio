@@ -725,6 +725,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
     if (!targetUserMsg || !targetUserMsg.content.trim()) return;
 
     isSubmittingRef.current = true;
+    setErrorBanner(null);
 
     // Filter valid history strictly up to and including that user message
     const historyUpToUser = msgs

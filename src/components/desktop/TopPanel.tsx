@@ -265,20 +265,32 @@ function AdminTrayBadge() {
 }
 
 /* ================= LOCAL USER BADGE ================= */
-function LocalUserBadge() {
+function LocalUserBadge({
+  onClick,
+  isActive,
+  buttonRef,
+}: {
+  onClick: () => void;
+  isActive: boolean;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
+}) {
   const localUser = useBootStore((state) => state.localUser);
   const userName = localUser?.name || 'Guest';
 
   return (
-    <div
-      className="panel-badge-item user-badge"
-      title={`Session User: ${userName} (Local Account)`}
-      aria-label={`Session user: ${userName}`}
-      role="status"
+    <button
+      ref={buttonRef}
+      type="button"
+      className={`panel-badge-item user-badge ${isActive ? 'active' : ''}`}
+      onClick={onClick}
+      title={`Session User: ${userName} (Click to open Control Center & Profile)`}
+      aria-label={`Session user: ${userName}. Click to open Control Center and profile settings`}
+      aria-expanded={isActive}
+      aria-haspopup="dialog"
     >
       <User size={13} />
       <span className="panel-badge-label">{userName}</span>
-    </div>
+    </button>
   );
 }
 
@@ -350,6 +362,7 @@ export function TopPanel() {
   const appLauncherRef = useRef<HTMLButtonElement>(null);
   const clockRef = useRef<HTMLButtonElement>(null);
   const trayRef = useRef<HTMLButtonElement>(null);
+  const userBadgeRef = useRef<HTMLButtonElement>(null);
 
   // Shared moving liquid glass indicator state
   const runningGroupRef = useRef<HTMLDivElement>(null);
@@ -459,7 +472,8 @@ export function TopPanel() {
         target.closest('.panel-button.launcher') ||
         target.closest('.panel-9dot-btn') ||
         target.closest('.panel-clock-button') ||
-        target.closest('.panel-tray-pill')
+        target.closest('.panel-tray-pill') ||
+        target.closest('.user-badge')
       ) {
         return;
       }
@@ -690,7 +704,13 @@ export function TopPanel() {
             }
           />
 
-          <LocalUserBadge />
+          <LocalUserBadge
+            buttonRef={userBadgeRef}
+            isActive={activePanel === 'quick_settings'}
+            onClick={() =>
+              setActivePanel((prev) => (prev === 'quick_settings' ? 'none' : 'quick_settings'))
+            }
+          />
           <AdminTrayBadge />
           <SettingsTrayButton />
         </div>

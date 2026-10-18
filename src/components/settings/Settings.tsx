@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Palette,
   Cpu,
@@ -19,6 +19,8 @@ import {
   AlertCircle,
   ExternalLink,
   Code,
+  Upload,
+  X,
 } from 'lucide-react';
 import { getAppIcon } from '../../lib/icons';
 import { useDesktopStore } from '../../stores/useDesktopStore';
@@ -27,6 +29,9 @@ import { useAdminAuth } from '../../lib/auth/adminAuth';
 import { configApi } from '../../lib/api/config';
 import { useBuiltInAssets } from '../../lib/admin/useAdminConfig';
 import { getApiErrorMessage } from '../../lib/api/client';
+import { useWallpaperSource, getWallpaperDisplayName } from '../../lib/wallpaper/wallpaperResolver';
+import { FileManager } from '../file-manager/FileManager';
+import { vfs } from '../../lib/vfs';
 import type { DesktopOpenRequest, PanelPosition } from '../../types/desktop';
 import './Settings.css';
 
@@ -99,6 +104,9 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
   const { openWindow } = useWindowStore();
 
   // Appearance Form State
+  const { url: resolvedWallpaperUrl } = useWallpaperSource(wallpaper);
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const hostFileInputRef = useRef<HTMLInputElement>(null);
   const [customImageUrl, setCustomImageUrl] = useState(wallpaper);
   const [savingGlobal, setSavingGlobal] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
@@ -108,6 +116,38 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
   useEffect(() => {
     setCustomImageUrl(wallpaper);
   }, [wallpaper]);
+
+  // Handle keyboard Escape for file picker modal
+  useEffect(() => {
+    if (!showFilePicker) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowFilePicker(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showFilePicker]);
+
+  const handleHostWallpaperUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    try {
+      const destination = `/home/pratyush/images/${file.name}`;
+      const result = await vfs.importBinaryFile(file, destination, 'rename');
+      if (result.success) {
+        handleSetWallpaper(destination);
+        setSaveSuccessMessage(`Imported ${file.name} to VirtualFS and set as desktop wallpaper.`);
+      } else {
+        setSaveErrorMessage(result.error || 'Failed to import image to VirtualFS');
+      }
+    } catch (err) {
+      setSaveErrorMessage(err instanceof Error ? err.message : 'Failed to import image');
+    } finally {
+      if (hostFileInputRef.current) hostFileInputRef.current.value = '';
+    }
+  };
 
   // System Health State
   const [health, setHealth] = useState<BackendHealth>({ status: 'checking' });
@@ -325,7 +365,7 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
                   className="settings-wallpaper-box"
                   style={{
                     backgroundColor: wallpaperColor,
-                    backgroundImage: wallpaper ? `url("${wallpaper}")` : 'none',
+                    backgroundImage: resolvedWallpaperUrl ? `url("${resolvedWallpaperUrl}")` : 'none',
                     backgroundSize: wallpaperSize,
                     backgroundPosition: wallpaperPosition,
                     backgroundRepeat: 'no-repeat',
@@ -338,7 +378,56 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
                     />
                   )}
                   <div className="settings-wallpaper-info">
-                    {wallpaper ? `Image: ${wallpaper.split('/').pop()}` : `Solid Color: ${wallpaperColor}`} • {wallpaperSize}
+                    {wallpaper ? `Image: ${getWallpaperDisplayName(wallpaper)}` : `Solid Color: ${wallpaperColor}`} • {wallpaperSize}
+                  </div>
+                </div>
+
+                {/* Choose Wallpaper from File Manager / Host */}
+                <div className="settings-row">
+                  <div className="settings-row-label">
+                    <span>Wallpaper Selection</span>
+                    <span>Browse images in MimiOS Virtual File System or upload from host</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="settings-btn settings-btn-primary"
+                      onClick={() => setShowFilePicker(true)}
+                      aria-label="Choose from File Manager"
+                    >
+                      <FolderOpen size={15} />
+                      <span>Choose from File Manager</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="settings-btn settings-btn-secondary"
+                      onClick={() => hostFileInputRef.current?.click()}
+                      aria-label="Upload from Computer"
+                      title="Upload an image file from your host computer directly to VirtualFS"
+                    >
+                      <Upload size={14} />
+                      <span>Upload from Computer</span>
+                    </button>
+                    <input
+                      ref={hostFileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                      style={{ display: 'none' }}
+                      onChange={handleHostWallpaperUpload}
+                    />
+
+                    {wallpaper && (
+                      <button
+                        type="button"
+                        className="settings-btn settings-btn-secondary"
+                        onClick={() => handleSetWallpaper('')}
+                        aria-label="Clear wallpaper"
+                      >
+                        <RotateCcw size={13} />
+                        <span>Use Solid Color</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -826,6 +915,55 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
           )}
         </main>
       </div>
+
+      {/* Reusable File Manager Wallpaper Selection Modal */}
+      {showFilePicker && (
+        <div
+          className="settings-picker-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose Wallpaper from File Manager"
+          onClick={() => setShowFilePicker(false)}
+        >
+          <div
+            className="settings-picker-modal-dialog"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="settings-picker-modal-header">
+              <div className="settings-picker-modal-title">
+                <FolderOpen size={16} />
+                <span>Choose Wallpaper — MimiOS File Manager</span>
+              </div>
+              <button
+                type="button"
+                className="settings-picker-modal-close"
+                onClick={() => setShowFilePicker(false)}
+                aria-label="Close file picker"
+                title="Close (Esc)"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="settings-picker-modal-body">
+              <FileManager
+                windowId="wallpaper-file-picker"
+                isPicker={true}
+                pickerOptions={{
+                  filterType: 'image',
+                  actionLabel: 'Use as Wallpaper',
+                  initialPath: '/home/pratyush/images',
+                }}
+                onSelectFile={file => {
+                  handleSetWallpaper(file.path);
+                  setShowFilePicker(false);
+                }}
+                onCancel={() => setShowFilePicker(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

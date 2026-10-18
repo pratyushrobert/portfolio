@@ -34,6 +34,7 @@ import {
   ArrowUpDown,
   PanelLeft,
   Link,
+  Check,
 } from 'lucide-react';
 import { vfs } from '../../lib/vfs';
 import { isFileNode, isDirectoryNode } from '../../lib/vfs/nodes';
@@ -43,12 +44,33 @@ import type { DesktopOpenRequest } from '../../types/desktop';
 import { projectsApi, type Project, type RemoteRepoItem, type RemoteRepoFile } from '../../lib/api/projects';
 import { githubApi, type GitHubRepoSummary } from '../../lib/api/github';
 import { getApiErrorMessage } from '../../lib/api/client';
+import { isSupportedImageExtension, useWallpaperSource } from '../../lib/wallpaper/wallpaperResolver';
 import './FileManager.css';
 
-interface FileManagerProps {
-  windowId: string;
+export interface FilePickerOptions {
+  filterType?: 'image' | 'all';
+  acceptedExtensions?: string[];
+  title?: string;
+  actionLabel?: string;
+  initialPath?: string;
+}
+
+export interface SelectedFileResult {
+  path: string;
+  name: string;
+  node: AnyVFSNode;
+  assetPath?: string;
+  mimeType?: string;
+}
+
+export interface FileManagerProps {
+  windowId?: string;
   appParams?: Record<string, unknown>;
   onOpenRequest?: (request: DesktopOpenRequest) => void;
+  isPicker?: boolean;
+  pickerOptions?: FilePickerOptions;
+  onSelectFile?: (file: SelectedFileResult) => void;
+  onCancel?: () => void;
 }
 
 const HOME_PATH = '/home/pratyush';
@@ -86,9 +108,31 @@ const LOCAL_PLACES = [
   { id: 'certificates', label: 'Certificates', path: `${HOME_PATH}/certificates`, icon: Folder },
 ];
 
-export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: FileManagerProps) {
-  // Initialize navigation location from appParams
+export function FileManager({
+  windowId: _windowId,
+  appParams,
+  onOpenRequest,
+  isPicker,
+  pickerOptions,
+  onSelectFile,
+  onCancel,
+}: FileManagerProps) {
+  const isPickerMode = Boolean(isPicker || appParams?.isPicker);
+  const pickerOpts: FilePickerOptions = pickerOptions || (appParams?.pickerOptions as FilePickerOptions) || {};
+  const filterType = pickerOpts.filterType || 'image';
+  const actionLabel = pickerOpts.actionLabel || 'Select';
+
+  const onSelectHandler = onSelectFile || (appParams?.onSelectFile as ((file: SelectedFileResult) => void) | undefined);
+  const onCancelHandler = onCancel || (appParams?.onCancel as (() => void) | undefined);
+
+  // Initialize navigation location from appParams and picker options
   const getInitialLocation = (): FMLocation => {
+    if (isPickerMode && pickerOpts.initialPath) {
+      return { type: 'local', path: pickerOpts.initialPath };
+    }
+    if (isPickerMode && filterType === 'image') {
+      return { type: 'local', path: `${HOME_PATH}/images` };
+    }
     if (appParams?.mode === 'github' || appParams?.repo) {
       if (appParams.repo) {
         return {
@@ -137,6 +181,62 @@ export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: F
   const [renamingEntry, setRenamingEntry] = useState<AnyVFSNode | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Picker mode preview and validation state
+  const selectedEntryPath = useMemo(() => {
+    if (!selectedLocalEntry || !isFileNode(selectedLocalEntry)) return '';
+    return currentLocation.type === 'local'
+      ? (currentLocation.path === '/' ? `/${selectedLocalEntry.name}` : `${currentLocation.path}/${selectedLocalEntry.name}`)
+      : `/${selectedLocalEntry.name}`;
+  }, [selectedLocalEntry, currentLocation]);
+
+  const { url: selectedPreviewUrl } = useWallpaperSource(selectedEntryPath);
+
+  const isEligibleSelected = useMemo(() => {
+    if (!selectedLocalEntry || !isFileNode(selectedLocalEntry)) return false;
+    if (filterType === 'image') {
+      return isSupportedImageExtension(selectedLocalEntry.name);
+    }
+    return true;
+  }, [selectedLocalEntry, filterType]);
+
+  const handleConfirmPick = useCallback((entry: AnyVFSNode) => {
+    if (!isFileNode(entry)) return;
+    if (filterType === 'image' && !isSupportedImageExtension(entry.name)) {
+      return;
+    }
+    const fullPath = currentLocation.type === 'local'
+      ? (currentLocation.path === '/' ? `/${entry.name}` : `${currentLocation.path}/${entry.name}`)
+      : `/${entry.name}`;
+
+    onSelectHandler?.({
+      path: fullPath,
+      name: entry.name,
+      node: entry,
+      assetPath: entry.assetPath,
+      mimeType: entry.mimeType,
+    });
+  }, [currentLocation, filterType, onSelectHandler]);
+
+  const handleCancelPicker = useCallback(() => {
+    onCancelHandler?.();
+  }, [onCancelHandler]);
+
+  // Keyboard shortcut in picker mode: Escape to cancel, Enter to confirm selection
+  useEffect(() => {
+    if (!isPickerMode) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        handleCancelPicker();
+      } else if (e.key === 'Enter' && selectedLocalEntry && isEligibleSelected) {
+        e.stopPropagation();
+        handleConfirmPick(selectedLocalEntry);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPickerMode, selectedLocalEntry, isEligibleSelected, handleConfirmPick, handleCancelPicker]);
 
   // Remote GitHub Repository State
   const [remoteEntries, setRemoteEntries] = useState<RemoteRepoItem[]>([]);
@@ -1102,28 +1202,32 @@ export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: F
                 onChange={e => e.target.files && handleFileSelect(e.target.files)}
                 style={{ display: 'none' }}
               />
-              <button
-                className="fm-btn"
-                onClick={() => {
-                  setCreatingItem('folder');
-                  setNewItemName('New Folder');
-                }}
-                title="New Folder"
-                aria-label="Create new folder"
-              >
-                <Icon icon={Plus} size={16} />
-              </button>
-              <button
-                className="fm-btn"
-                onClick={() => {
-                  setCreatingItem('file');
-                  setNewItemName('new-file.txt');
-                }}
-                title="New File"
-                aria-label="Create new file"
-              >
-                <Icon icon={File} size={16} />
-              </button>
+              {!isPickerMode && (
+                <>
+                  <button
+                    className="fm-btn"
+                    onClick={() => {
+                      setCreatingItem('folder');
+                      setNewItemName('New Folder');
+                    }}
+                    title="New Folder"
+                    aria-label="Create new folder"
+                  >
+                    <Icon icon={Plus} size={16} />
+                  </button>
+                  <button
+                    className="fm-btn"
+                    onClick={() => {
+                      setCreatingItem('file');
+                      setNewItemName('new-file.txt');
+                    }}
+                    title="New File"
+                    aria-label="Create new file"
+                  >
+                    <Icon icon={File} size={16} />
+                  </button>
+                </>
+              )}
               <label
                 className="fm-btn toggle"
                 title={showHidden ? 'Hide hidden files' : 'Show hidden files'}
@@ -1691,14 +1795,19 @@ export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: F
                   const isRenaming = renamingEntry?.id === entry.id;
                   const isHidden = entry.name.startsWith('.');
                   const isVirtual = entry.name === 'github' && currentLocation.path === HOME_PATH;
+                  const isPickerIneligible = isPickerMode && isFileNode(entry) && filterType === 'image' && !isSupportedImageExtension(entry.name);
 
                   return (
                     <div
                       key={entry.id}
-                      className={`fm-entry ${isSelected ? 'selected' : ''} ${isHidden ? 'hidden' : ''} ${isRenaming ? 'renaming' : ''}`}
+                      className={`fm-entry ${isSelected ? 'selected' : ''} ${isHidden ? 'hidden' : ''} ${isRenaming ? 'renaming' : ''} ${isPickerIneligible ? 'ineligible' : ''}`}
                       role="option"
                       aria-selected={isSelected}
-                      onClick={() => setSelectedLocalEntry(entry)}
+                      title={isPickerIneligible ? `${entry.name} (Not an eligible image)` : entry.name}
+                      onClick={() => {
+                        if (isPickerIneligible) return;
+                        setSelectedLocalEntry(entry);
+                      }}
                       onDoubleClick={() => {
                         if (isVirtual) {
                           navigateToLocation({ type: 'github-list' });
@@ -1708,10 +1817,20 @@ export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: F
                             : `${currentLocation.path}/${entry.name}`;
                           navigateToLocation({ type: 'local', path: newPath });
                         } else if (isFileNode(entry)) {
-                          openLocalFile(entry);
+                          if (isPickerMode) {
+                            if (filterType === 'image' && isSupportedImageExtension(entry.name)) {
+                              handleConfirmPick(entry);
+                            }
+                          } else {
+                            openLocalFile(entry);
+                          }
                         }
                       }}
                       onContextMenu={e => {
+                        if (isPickerMode) {
+                          e.preventDefault();
+                          return;
+                        }
                         e.preventDefault();
                         setSelectedLocalEntry(entry);
                         setContextMenu({
@@ -1774,7 +1893,7 @@ export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: F
                               </div>
                             </>
                           )}
-                          {!isVirtual && (
+                          {!isVirtual && !isPickerMode && (
                             <div className="fm-entry-actions" onClick={e => e.stopPropagation()}>
                               <button
                                 className="fm-icon-btn"
@@ -1812,7 +1931,7 @@ export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: F
           )}
 
           {/* Inline Create Input */}
-          {isLocalMode && creatingItem && (
+          {isLocalMode && !isPickerMode && creatingItem && (
             <div className="fm-entry creating">
               <div className="fm-entry-icon">
                 {creatingItem === 'folder' ? (
@@ -2161,6 +2280,61 @@ export function FileManager({ windowId: _windowId, appParams, onOpenRequest }: F
                 {localLoading ? 'Uploading...' : 'Upload'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Reusable Picker Mode Action Bar */}
+      {isPickerMode && (
+        <div className="fm-picker-footer" role="region" aria-label="Wallpaper Picker Controls">
+          <div className="fm-picker-selected-preview">
+            {selectedPreviewUrl ? (
+              <div className="fm-picker-thumb-wrapper">
+                <img src={selectedPreviewUrl} alt={selectedLocalEntry?.name || 'Preview'} className="fm-picker-thumb" />
+              </div>
+            ) : (
+              <div className="fm-picker-thumb-placeholder">
+                <Icon icon={Image} size={18} />
+              </div>
+            )}
+            <div className="fm-picker-meta">
+              {selectedLocalEntry && isFileNode(selectedLocalEntry) && isEligibleSelected ? (
+                <>
+                  <span className="fm-picker-filename" title={selectedLocalEntry.name}>
+                    {selectedLocalEntry.name}
+                  </span>
+                  <span className="fm-picker-filepath">
+                    {selectedEntryPath}
+                    {selectedLocalEntry.size ? ` • ${(selectedLocalEntry.size / 1024).toFixed(1)} KB` : ''}
+                  </span>
+                </>
+              ) : (
+                <span className="fm-picker-placeholder-text">
+                  Select an image (PNG, JPG, WebP, GIF, SVG) to use as desktop wallpaper
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="fm-picker-actions">
+            <button
+              type="button"
+              className="fm-picker-btn secondary"
+              onClick={handleCancelPicker}
+              aria-label="Cancel selection"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="fm-picker-btn primary"
+              disabled={!isEligibleSelected}
+              onClick={() => selectedLocalEntry && handleConfirmPick(selectedLocalEntry)}
+              aria-label={actionLabel}
+            >
+              <Icon icon={Check} size={14} />
+              <span>{actionLabel}</span>
+            </button>
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ function clampWindowPosition(
   y: number,
   windowWidth: number
 ): { x: number; y: number } {
-  const panelPosition = useDesktopStore.getState().panelPosition || 'top';
+  const panelPosition = useDesktopStore.getState().panelPosition || 'bottom';
   const showPanel = useDesktopStore.getState().showPanel;
 
   const topInset = showPanel && panelPosition === 'top' ? 40 : 0;
@@ -171,7 +171,7 @@ export function useResizable({ windowId, minWidth = 320, minHeight = 220 }: UseR
       const dx = e.clientX - resizeState.current.startX;
       const dy = e.clientY - resizeState.current.startY;
 
-      const panelPosition = useDesktopStore.getState().panelPosition || 'top';
+      const panelPosition = useDesktopStore.getState().panelPosition || 'bottom';
       const showPanel = useDesktopStore.getState().showPanel;
       const bottomInset = showPanel && panelPosition === 'bottom' ? 40 : 0;
 

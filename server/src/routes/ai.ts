@@ -97,10 +97,19 @@ export async function aiRoutes(fastify: FastifyInstance, context: RouteContext):
       }
 
       // Streaming Server-Sent Events (SSE) mode
+      // Hijack the response to manage raw streaming and propagate all headers set by hooks (CORS, cookies, helmet)
+      reply.hijack();
+      const replyHeaders = reply.getHeaders();
+      for (const [key, val] of Object.entries(replyHeaders)) {
+        if (val !== undefined) {
+          reply.raw.setHeader(key, val);
+        }
+      }
       reply.raw.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
       reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
       reply.raw.setHeader('Connection', 'keep-alive');
       reply.raw.setHeader('X-Accel-Buffering', 'no');
+      reply.raw.setHeader('x-request-id', reqId);
 
       // Send initial keepalive comment to open stream
       reply.raw.write(': mimi-ai-stream-start\n\n');

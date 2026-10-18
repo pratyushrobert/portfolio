@@ -2,56 +2,83 @@
 
 .liquid-glass-clock {
   position: relative;
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   user-select: none;
+  padding: 16px 36px 14px 36px;
+  border-radius: 26px;
+  box-sizing: border-box;
 }
 
-/* 1. Subtle Ambient Optical Diffusion Layer (Borderless, Organic) */
+/* 1. Translucent Liquid-Glass Panel Backdrop (Guarantees Full Clock & Date Visibility Above Wallpaper) */
+.liquid-clock-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(14, 18, 26, 0.55) 60%,
+    rgba(8, 10, 15, 0.70) 100%
+  );
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1.2px 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.45),
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 2. Top Specular Perimeter Highlight Across Glass Panel */
+.liquid-clock-time-lens {
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 3. Subtle Ambient Light Diffusion Layer */
 .liquid-clock-glow-diffusion {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 145%;
-  height: 145%;
-  border-radius: 50%;
+  width: 108%;
+  height: 108%;
+  border-radius: 32px;
   background: radial-gradient(
     ellipse at 50% 50%,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(10, 14, 22, 0.35) 48%,
-    transparent 74%
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 70%
   );
-  filter: blur(28px);
+  filter: blur(18px);
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
 }
 
-/* 2. Optical Wallpaper Refraction Lens Behind Digits (Soft Masked, No Rectangular Edge) */
-.liquid-clock-time-lens {
-  position: absolute;
-  top: -10%;
-  left: -12%;
-  width: 124%;
-  height: 105%;
-  border-radius: 40px;
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
-  backdrop-filter: var(--liquid-glass-blur);
-  pointer-events: none;
-  z-index: 1;
-  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, #000 35%, transparent 100%);
-  mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, #000 35%, transparent 100%);
-}
-
-/* 3. Primary Liquid-Glass Digits Container & Refraction Bevel Shadow */
+/* 4. Primary Liquid-Glass Digits Container & Refraction Bevel Shadow */
 .liquid-clock-time-val {
   position: relative;
   z-index: 2;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro', system-ui, -apple-system, sans-serif;
-  font-size: clamp(68px, 8.8vw, 104px);
+  font-size: clamp(56px, 7.2vw, 92px);
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 0.95;
@@ -60,22 +87,22 @@
 
   /* Physical glass bevel refraction: crisp drop shadow creates physical glass thickness */
   filter:
-    drop-shadow(1px 1.5px 0.5px rgba(0, 0, 0, 0.42))
-    drop-shadow(0 4px 14px rgba(0, 0, 0, 0.52))
-    drop-shadow(0 16px 36px rgba(0, 0, 0, 0.62));
+    drop-shadow(1px 1.5px 0.5px rgba(0, 0, 0, 0.45))
+    drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 16px 32px rgba(0, 0, 0, 0.65));
 }
 
-/* 4. Translucent Digit Interior (Wallpaper Genuinely Visible Through Numbers) */
+/* 5. Translucent Digit Interior (High Legibility with Liquid Luster) */
 .liquid-clock-time-digits {
   position: relative;
   display: inline-block;
   z-index: 2;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.32) 0%,
-    rgba(255, 255, 255, 0.10) 25%,
-    rgba(255, 255, 255, 0.03) 60%,
-    rgba(255, 255, 255, 0.16) 100%
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.90) 35%,
+    rgba(240, 244, 252, 0.76) 75%,
+    rgba(255, 255, 255, 0.88) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -83,7 +110,7 @@
   color: transparent;
 }
 
-/* 5. Glass Edge / Specular Upper-Left Perimeter Highlight */
+/* 6. Glass Edge / Specular Upper-Left Perimeter Highlight */
 .liquid-clock-time-val::before {
   content: attr(data-time);
   position: absolute;
@@ -110,7 +137,7 @@
   color: transparent;
 }
 
-/* 6. Inner Refraction Bevel Highlight */
+/* 7. Inner Refraction Bevel Highlight */
 .liquid-clock-time-val::after {
   content: attr(data-time);
   position: absolute;
@@ -130,18 +157,18 @@
   opacity: 0.75;
 }
 
-/* 7. Secondary Subdued Date Display */
+/* 8. Secondary Subdued Date Display */
 .liquid-clock-date {
   position: relative;
   z-index: 2;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', system-ui, -apple-system, sans-serif;
-  font-size: clamp(12px, 1.3vw, 14px);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', system-ui, sans-serif);
+  font-size: clamp(12px, 1.2vw, 13.5px);
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   line-height: 1.2;
-  margin-top: 8px;
-  color: rgba(255, 255, 255, 0.70);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+  margin-top: 9px;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   white-space: nowrap;
   user-select: none;
 }
@@ -150,21 +177,22 @@
 .desktop-glass-clock {
   position: absolute;
   left: 50%;
-  top: calc(var(--panel-height, 42px) + clamp(36px, 16vh, 120px));
   transform: translateX(-50%);
   pointer-events: none !important;
-  z-index: 5;
+  z-index: 10;
   animation: desktopClockFadeIn 0.4s ease-out;
+  display: inline-flex;
+  max-width: 90vw;
 }
 
 .desktop-glass-clock.position-top {
-  top: calc(var(--panel-height, 42px) + clamp(36px, 16vh, 120px));
+  top: calc(var(--panel-height, 42px) + clamp(18px, 6vh, 52px));
 }
 
 .desktop-glass-clock.position-bottom,
 .desktop-glass-clock.position-left,
 .desktop-glass-clock.position-right {
-  top: clamp(48px, 18vh, 130px);
+  top: clamp(28px, 9vh, 72px);
 }
 
 .desktop-glass-clock * {
@@ -179,6 +207,40 @@
   to {
     opacity: 1;
     transform: translate(-50%, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  .liquid-glass-clock {
+    padding: 13px 26px 11px 26px;
+    border-radius: 22px;
+  }
+  .liquid-clock-panel-backdrop {
+    border-radius: 22px;
+  }
+  .liquid-clock-time-val {
+    font-size: clamp(46px, 11vw, 66px);
+  }
+  .liquid-clock-date {
+    font-size: 12px;
+    margin-top: 7px;
+  }
+}
+
+@media (max-width: 480px) {
+  .liquid-glass-clock {
+    padding: 11px 20px 9px 20px;
+    border-radius: 18px;
+  }
+  .liquid-clock-panel-backdrop {
+    border-radius: 18px;
+  }
+  .liquid-clock-time-val {
+    font-size: clamp(38px, 12vw, 50px);
+  }
+  .liquid-clock-date {
+    font-size: 11px;
+    margin-top: 5px;
   }
 }
 

@@ -10,34 +10,34 @@ export const GRID_START_X = 24;
 export const GRID_START_Y = 56;
 export const GRID_PANEL_BOTTOM_START_Y = 24;
 
-export function getGridStartX(panelPosition: PanelPosition = 'top'): number {
+export function getGridStartX(panelPosition: PanelPosition = 'bottom'): number {
   return panelPosition === 'left' ? 68 : GRID_START_X;
 }
 
-export function getGridStartY(panelPosition: PanelPosition = 'top'): number {
+export function getGridStartY(panelPosition: PanelPosition = 'bottom'): number {
   return panelPosition === 'top' ? GRID_START_Y : GRID_PANEL_BOTTOM_START_Y;
 }
 
-export function gridColToX(col: number, panelPosition: PanelPosition = 'top'): number {
+export function gridColToX(col: number, panelPosition: PanelPosition = 'bottom'): number {
   return getGridStartX(panelPosition) + col * GRID_COL_WIDTH;
 }
 
-export function gridRowToY(row: number, panelPosition: PanelPosition = 'top'): number {
+export function gridRowToY(row: number, panelPosition: PanelPosition = 'bottom'): number {
   return getGridStartY(panelPosition) + row * GRID_ROW_HEIGHT;
 }
 
-export function xToGridCol(x: number, panelPosition: PanelPosition = 'top'): number {
+export function xToGridCol(x: number, panelPosition: PanelPosition = 'bottom'): number {
   return Math.round((x - getGridStartX(panelPosition)) / GRID_COL_WIDTH);
 }
 
-export function yToGridRow(y: number, panelPosition: PanelPosition = 'top'): number {
+export function yToGridRow(y: number, panelPosition: PanelPosition = 'bottom'): number {
   return Math.round((y - getGridStartY(panelPosition)) / GRID_ROW_HEIGHT);
 }
 
 export function snapToGrid(
   x: number,
   y: number,
-  panelPosition: PanelPosition = 'top'
+  panelPosition: PanelPosition = 'bottom'
 ): { x: number; y: number; col: number; row: number } {
   const col = Math.max(0, xToGridCol(x, panelPosition));
   const row = Math.max(0, yToGridRow(y, panelPosition));
@@ -95,7 +95,7 @@ export const DEFAULT_ICONS: DesktopIcon[] = [
 
 export function sanitizeIconGrid(
   icons: DesktopIcon[],
-  panelPosition: PanelPosition = 'top'
+  panelPosition: PanelPosition = 'bottom'
 ): DesktopIcon[] {
   // Map existing icons by appId or id
   const iconMap = new Map<string, DesktopIcon>();
@@ -221,7 +221,7 @@ export const useDesktopStore = create<DesktopStore>()(
       wallpaperOverlayOpacity: 30,
       glassBlur: 5,
       icons: DEFAULT_ICONS,
-      panelPosition: 'top' as PanelPosition,
+      panelPosition: 'bottom' as PanelPosition,
       panelStyle: 'floating' as PanelStyle,
       showPanel: true,
       systemVolume: 80,
@@ -504,6 +504,13 @@ export const useDesktopStore = create<DesktopStore>()(
     {
       name: 'pratyushos-desktop',
       version: 5,
+      onRehydrateStorage: () => (state) => {
+        if (state?.glassBlur !== undefined) {
+          applyGlassBlurProperty(state.glassBlur);
+        } else {
+          applyGlassBlurProperty(5);
+        }
+      },
       migrate: (persistedState: any, version: number) => {
         if (!persistedState || version < 5) {
           return {

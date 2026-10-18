@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useDesktopStore } from '../../stores/useDesktopStore';
 import { configApi } from '../../lib/api/config';
+import { useWallpaperSource } from '../../lib/wallpaper/wallpaperResolver';
 import './Desktop.css';
 
 function parseOverlayColor(overlay: string): string {
@@ -23,6 +24,8 @@ export function Wallpaper() {
   const wallpaperOverlayOpacity = useDesktopStore(state => state.wallpaperOverlayOpacity ?? 30);
   const setBackgroundConfig = useDesktopStore(state => state.setBackgroundConfig);
 
+  const { url: resolvedWallpaperUrl } = useWallpaperSource(wallpaper);
+
   // Authoritative site configuration load on startup
   useEffect(() => {
     let active = true;
@@ -37,15 +40,23 @@ export function Wallpaper() {
         const activeOverlayOpacity = isNaN(rawOverlayOpacity) ? 30 : Math.min(100, Math.max(0, rawOverlayOpacity));
         const activeGlassBlur = isNaN(rawGlassBlur) ? 5 : Math.min(30, Math.max(0, rawGlassBlur));
 
+        // Preserve user's local wallpaper choice if already set in persistent store
+        const currentLocal = useDesktopStore.getState().wallpaper;
+        const effectiveWallpaper = currentLocal && currentLocal.trim() ? currentLocal : (config.wallpaper_url ?? '');
+
+        // Preserve user's local glassBlur choice if already set in persistent store
+        const currentLocalBlur = useDesktopStore.getState().glassBlur;
+        const effectiveGlassBlur = typeof currentLocalBlur === 'number' ? currentLocalBlur : activeGlassBlur;
+
         setBackgroundConfig({
-          wallpaper: config.wallpaper_url ?? '',
+          wallpaper: effectiveWallpaper,
           wallpaperPosition: config.wallpaper_position ?? 'center',
           wallpaperSize: config.wallpaper_size ?? 'cover',
           wallpaperOverlay: config.wallpaper_overlay ?? '#000000',
           wallpaperColor: config.wallpaper_color && config.wallpaper_color !== '#1a1a2e' ? config.wallpaper_color : '#08090d',
           wallpaperBrightness: activeBrightness,
           wallpaperOverlayOpacity: activeOverlayOpacity,
-          glassBlur: activeGlassBlur,
+          glassBlur: effectiveGlassBlur,
         });
       } catch (err) {
         // Sensible fallback if backend unavailable
@@ -56,7 +67,7 @@ export function Wallpaper() {
     return () => { active = false; };
   }, [setBackgroundConfig]);
 
-  const hasImage = Boolean(wallpaper && wallpaper.trim());
+  const hasImage = Boolean(resolvedWallpaperUrl && resolvedWallpaperUrl.trim());
 
   return (
     <div
@@ -77,7 +88,7 @@ export function Wallpaper() {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url("${wallpaper}")`,
+            backgroundImage: `url("${resolvedWallpaperUrl}")`,
             backgroundSize: wallpaperSize,
             backgroundPosition: wallpaperPosition,
             backgroundRepeat: 'no-repeat',

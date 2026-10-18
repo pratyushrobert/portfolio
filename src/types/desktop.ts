@@ -46,6 +46,8 @@ export interface DesktopState {
   wifiEnabled?: boolean;
   bluetoothEnabled?: boolean;
   airplaneMode?: boolean;
+  mascotEnabled?: boolean;
+  soundEffectsEnabled?: boolean;
 }
 
 export interface AppDefinition {

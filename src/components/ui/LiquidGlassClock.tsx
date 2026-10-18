@@ -32,10 +32,10 @@ export function LiquidGlassClock({ className = '', showDate = true }: LiquidGlas
       className={`liquid-glass-clock ${className}`}
       aria-label={`Current time: ${timeString}${showDate ? `, ${formattedDate}` : ''}`}
     >
-      {/* Subtle Ambient Optical Diffusion Behind Digits (Borderless) */}
-      <div className="liquid-clock-glow-diffusion" aria-hidden="true" />
+      {/* Translucent liquid-glass panel backdrop enclosing time and date */}
+      <div className="liquid-clock-panel-backdrop" aria-hidden="true" />
 
-      {/* Optical Wallpaper Refraction Lens Behind Digits */}
+      {/* Subtle Ambient Optical Specular Highlight */}
       <div className="liquid-clock-time-lens" aria-hidden="true" />
 
       {/* Primary Liquid-Glass Digits */}

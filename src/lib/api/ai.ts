@@ -124,7 +124,11 @@ export const aiApi = {
     } catch (err: unknown) {
       if (signal?.aborted) return;
       const msg = err instanceof Error ? err.message : 'Network error';
-      throw new ApiError(`Connection failed: ${msg}`, 0, 'NETWORK_ERROR');
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const detail = isOffline
+        ? 'Your browser is currently offline. Please check your internet connection.'
+        : `Connection to AI service failed: ${msg}. Please verify backend status.`;
+      throw new ApiError(detail, 0, 'NETWORK_ERROR');
     }
 
     if (!response.ok) {
@@ -165,11 +169,20 @@ export const aiApi = {
     try {
       while (true) {
         if (signal?.aborted) {
-          await reader.cancel();
+          await reader.cancel().catch(() => {});
           return;
         }
 
-        const { done, value } = await reader.read();
+        let readResult: ReadableStreamReadResult<Uint8Array>;
+        try {
+          readResult = await reader.read();
+        } catch (readErr: unknown) {
+          if (signal?.aborted) return;
+          const msg = readErr instanceof Error ? readErr.message : 'Stream interrupted';
+          throw new ApiError(`Stream connection interrupted: ${msg}`, 0, 'STREAM_INTERRUPTED');
+        }
+
+        const { done, value } = readResult;
         if (done) {
           // Flush decoder and any remaining buffered line
           buffer += decoder.decode();

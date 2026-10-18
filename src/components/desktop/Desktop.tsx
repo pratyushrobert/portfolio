@@ -211,6 +211,7 @@ export function Desktop() {
       <DesktopIcons
         selectedId={selectedIconId}
         onSelect={setSelectedIconId}
+        onActivate={handleOpenApp}
         onDoubleClick={handleIconDoubleClick}
         onContextMenuIcon={(icon, e) => {
           setSelectedIconId(icon.id);

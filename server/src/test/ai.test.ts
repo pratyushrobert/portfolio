@@ -267,6 +267,40 @@ describe('MimiAI & NVIDIA NIM Provider Adapter', () => {
       expect(payload.includes(testApiKey)).toBe(false);
     });
 
+    it('preserves CORS headers and credentials on streaming SSE response for cross-origin client', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        const sseStream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hi"}}]}\n\ndata: [DONE]\n\n'));
+            controller.close();
+          },
+        });
+        return new Response(sseStream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        });
+      });
+
+      const res = await configuredApp.inject({
+        method: 'POST',
+        url: '/api/ai/chat',
+        headers: {
+          origin: 'http://localhost:5173',
+        },
+        payload: {
+          messages: [{ role: 'user', content: 'Testing CORS streaming' }],
+          stream: true,
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('text/event-stream');
+      expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+      expect(res.headers['access-control-allow-credentials']).toBe('true');
+      expect(res.headers['vary']).toContain('Origin');
+      expect(res.headers['x-request-id']).toBeDefined();
+    });
+
     it('successfully processes non-streaming request when stream=false', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
         const sseStream = new ReadableStream({

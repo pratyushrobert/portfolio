@@ -9,7 +9,7 @@ import {
   isSymlinkNode,
   updateNodeTimestamp,
 } from './nodes';
-import { saveToLocalStorage } from './persistence';
+import { saveToLocalStorage, loadFromLocalStorage } from './persistence';
 import { storeBinaryFile, getBinaryFile, deleteBinaryFile, generateStorageKey } from './binaryStorage';
 import type {
   VFSState,
@@ -25,17 +25,26 @@ export class VirtualFS {
   private static _instance: VirtualFS | null = null;
 
   private constructor() {
-    // Clear localStorage to force fresh state
+    let savedState: VFSState | null = null;
     if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('mimios-vfs');
-      localStorage.removeItem('mimios-vfs-version');
+      savedState = loadFromLocalStorage();
     }
-    console.log('[VFS] Constructor called - creating initial state');
-    this.state = this.createInitialState();
-    if (typeof localStorage !== 'undefined') {
-      saveToLocalStorage(this.state);
+
+    if (savedState && savedState.nodes && savedState.rootId) {
+      const initial = this.createInitialState();
+      this.state = {
+        ...savedState,
+        nodes: {
+          ...initial.nodes,
+          ...savedState.nodes,
+        },
+      };
+    } else {
+      this.state = this.createInitialState();
+      if (typeof localStorage !== 'undefined') {
+        saveToLocalStorage(this.state);
+      }
     }
-    console.log('[VFS] Initial state created, cwd:', this.state.cwd, 'nodes:', Object.keys(this.state.nodes).length);
   }
 
   static getInstance(): VirtualFS {
@@ -272,6 +281,9 @@ Once discovered, submit your flag with: 'challenge submit <flag>'`
         [experienceFile.id]: experienceFile,
         [flagCipher.id]: flagCipher,
         [flagNote.id]: flagNote,
+        [heroImage.id]: heroImage,
+        [reactLogo.id]: reactLogo,
+        [viteLogo.id]: viteLogo,
       },
       rootId: root.id,
       cwd: '/home/pratyush',

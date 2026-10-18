@@ -1125,23 +1125,335 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* ================= 5. QUICK SETTINGS CONTROLS ================= */
+/* ================= 5. QUICK SETTINGS CONTROLS & CONTROL CENTER ================= */
 
-/* Connectivity 3-Column Toggle Grid */
+/* Control Center Panel Shell Override */
+.liquid-glass-flyout.qs-control-center-panel {
+  width: 380px;
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 72px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 16px 14px 16px;
+  border-radius: 18px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.liquid-glass-flyout.qs-control-center-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.liquid-glass-flyout.qs-control-center-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.liquid-glass-flyout.qs-control-center-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+/* 1. Header Bar */
+.qs-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.qs-panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qs-panel-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.qs-panel-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+.qs-panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qs-battery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.qs-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qs-close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.qs-close-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+}
+
+/* Sections Hierarchy */
+.qs-section-container {
+  margin-bottom: 12px;
+}
+
+.qs-section-heading {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+/* 2. Profile Card */
+.qs-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(16, 20, 28, 0.5) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.2), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.qs-profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.qs-profile-avatar.is-guest {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.qs-profile-avatar.is-admin {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%);
+  border: 1.5px solid rgba(96, 165, 250, 0.5);
+  color: #93c5fd;
+}
+
+.qs-profile-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.qs-profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qs-profile-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qs-profile-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.qs-profile-edit-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.qs-profile-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qs-profile-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11.5px;
+  color: #ffffff;
+  outline: none;
+}
+
+.qs-profile-input:focus {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.qs-profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.qs-profile-save-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.qs-profile-role-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.qs-profile-badge {
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.qs-profile-badge.guest {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.qs-profile-badge.admin {
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: #93c5fd;
+}
+
+.qs-profile-subtext {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.qs-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.qs-profile-action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--liquid-glass-border-subtle);
+  background: var(--liquid-glass-btn-bg);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.qs-profile-action-btn:hover {
+  background: var(--liquid-glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.qs-profile-action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+/* 3. Connectivity Grid & Cards */
 .qs-connectivity-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
+.qs-toggle-card,
 .qs-toggle-btn {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
   height: 64px;
-  padding: 10px 10px;
+  padding: 9px 10px;
   border-radius: 12px;
   border: 1px solid var(--liquid-glass-border-subtle);
   background: var(--liquid-glass-btn-bg);
@@ -1154,49 +1466,63 @@
   outline: none;
 }
 
+.qs-toggle-card:hover,
 .qs-toggle-btn:hover {
   background: var(--liquid-glass-btn-hover);
   border-color: rgba(255, 255, 255, 0.22);
   color: #ffffff;
 }
 
+.qs-toggle-card.is-active,
 .qs-toggle-btn.is-active {
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.24) 0%,
-    rgba(255, 255, 255, 0.12) 40%,
+    rgba(255, 255, 255, 0.11) 40%,
     rgba(32, 38, 52, 0.7) 100%
   );
   border-color: rgba(255, 255, 255, 0.35);
   color: #ffffff;
   box-shadow:
     inset 0 1.2px 1px rgba(255, 255, 255, 0.45),
-    0 2px 12px rgba(0, 0, 0, 0.35);
+    0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
+.qs-toggle-card:focus-visible,
 .qs-toggle-btn:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.45);
   outline-offset: 1px;
 }
 
+.qs-toggle-card:disabled,
+.qs-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qs-toggle-icon-wrapper,
 .qs-toggle-icon {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: inherit;
-  transition: background 0.16s ease;
+  justify-content: flex-start;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.16s ease;
+  margin-bottom: 2px;
 }
 
+.qs-toggle-card.is-active .qs-toggle-icon-wrapper,
 .qs-toggle-btn.is-active .qs-toggle-icon {
-  background: rgba(255, 255, 255, 0.25);
+  background: transparent;
   color: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
 }
 
+.qs-toggle-text-block,
 .qs-toggle-meta {
   display: flex;
   flex-direction: column;
@@ -1205,6 +1531,7 @@
   text-align: left;
 }
 
+.qs-toggle-primary-label,
 .qs-toggle-name {
   font-size: 11px;
   font-weight: 600;
@@ -1214,6 +1541,7 @@
   text-overflow: ellipsis;
 }
 
+.qs-toggle-state-label,
 .qs-toggle-status {
   font-size: 9.5px;
   color: rgba(255, 255, 255, 0.6);
@@ -1222,62 +1550,77 @@
   text-overflow: ellipsis;
 }
 
+.qs-toggle-card.is-active .qs-toggle-state-label,
 .qs-toggle-btn.is-active .qs-toggle-status {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
 }
 
-/* Sliders Group (Brightness & Volume) */
+/* 4. Display and Audio Sliders Card */
+.qs-sliders-card,
 .qs-sliders-group {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-bottom: 16px;
-  padding: 12px;
+  gap: 12px;
+  padding: 12px 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
+.qs-slider-block,
 .qs-slider-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+.qs-slider-meta-row,
 .qs-slider-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
 }
 
+.qs-slider-title,
 .qs-slider-label {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+.qs-slider-icon {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.qs-slider-icon.muted {
+  color: #f87171;
+}
+
+.qs-slider-numeric-val,
 .qs-slider-val {
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.8);
 }
 
+.qs-slider-track-wrap,
 .qs-slider-control {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
+.qs-mute-toggle-btn,
 .qs-slider-mute-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
@@ -1287,35 +1630,45 @@
   flex-shrink: 0;
 }
 
+.qs-mute-toggle-btn:hover,
 .qs-slider-mute-btn:hover {
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
+.qs-mute-toggle-btn.is-muted,
 .qs-slider-mute-btn.is-muted {
   background: rgba(239, 68, 68, 0.16);
   border-color: rgba(239, 68, 68, 0.35);
   color: #f87171;
 }
 
-/* Custom Liquid Glass Range Slider Track & Thumb */
+/* Filled Dynamic Track Range Slider */
+.qs-slider-input,
 .qs-range-slider {
   flex: 1;
   height: 6px;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.8) var(--fill-percent, 50%),
+    rgba(255, 255, 255, 0.12) var(--fill-percent, 50%),
+    rgba(255, 255, 255, 0.12) 100%
+  );
   border-radius: 3px;
   outline: none;
   cursor: pointer;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
+.qs-slider-input::-webkit-slider-thumb,
 .qs-range-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   background: #ffffff;
   box-shadow:
@@ -1325,16 +1678,19 @@
   transition: transform 0.12s ease;
 }
 
+.qs-slider-input::-webkit-slider-thumb:hover,
 .qs-range-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.18);
+  transform: scale(1.2);
 }
 
+.qs-slider-input:focus-visible,
 .qs-range-slider:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.45);
   outline-offset: 2px;
 }
 
-/* Quick Settings Action Row (Settings, Battery, Power) */
+/* 5. Footer Quick Actions */
+.qs-footer-actions,
 .qs-action-row {
   display: flex;
   align-items: center;
@@ -1344,11 +1700,17 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.qs-footer-right-group {
+  display: flex;
+  gap: 6px;
+}
+
+.qs-footer-btn,
 .qs-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 6px 11px;
   border-radius: 8px;
   border: 1px solid var(--liquid-glass-border-subtle);
   background: var(--liquid-glass-btn-bg);
@@ -1359,18 +1721,21 @@
   transition: all 0.15s ease;
 }
 
+.qs-footer-btn:hover,
 .qs-action-btn:hover {
   background: var(--liquid-glass-btn-hover);
   border-color: rgba(255, 255, 255, 0.24);
   color: #ffffff;
 }
 
+.qs-footer-btn.danger:hover,
 .qs-action-btn.danger:hover {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.4);
   color: #fca5a5;
 }
 
+.qs-footer-btn:focus-visible,
 .qs-action-btn:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.45);
 }

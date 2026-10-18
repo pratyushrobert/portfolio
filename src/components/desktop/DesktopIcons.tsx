@@ -8,7 +8,8 @@ interface DesktopIconItemProps {
   icon: DesktopIcon;
   isSelected: boolean;
   onSelect: (id: string, e?: React.MouseEvent) => void;
-  onDoubleClick: (id: string) => void;
+  onActivate: (appId: string) => void;
+  onDoubleClick?: (id: string) => void;
   onContextMenuIcon?: (icon: DesktopIcon, e: React.MouseEvent) => void;
 }
 
@@ -16,6 +17,7 @@ function DesktopIconItem({
   icon,
   isSelected,
   onSelect,
+  onActivate,
   onDoubleClick,
   onContextMenuIcon,
 }: DesktopIconItemProps) {
@@ -24,11 +26,16 @@ function DesktopIconItem({
 
   const handleClick = (e: React.MouseEvent) => {
     onSelect(icon.id, e);
+    onActivate(icon.appId || icon.id);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    onDoubleClick(icon.appId || icon.id);
+    if (onDoubleClick) {
+      onDoubleClick(icon.appId || icon.id);
+    } else {
+      onActivate(icon.appId || icon.id);
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -41,7 +48,7 @@ function DesktopIconItem({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      onDoubleClick(icon.appId || icon.id);
+      onActivate(icon.appId || icon.id);
     } else if (e.key === ' ') {
       e.preventDefault();
       onSelect(icon.id);
@@ -74,13 +81,15 @@ function DesktopIconItem({
 export interface DesktopIconsProps {
   selectedId: string | null;
   onSelect: (id: string | null, e?: React.MouseEvent) => void;
-  onDoubleClick: (id: string) => void;
+  onActivate?: (appId: string) => void;
+  onDoubleClick?: (id: string) => void;
   onContextMenuIcon?: (icon: DesktopIcon, e: React.MouseEvent) => void;
 }
 
 export function DesktopIcons({
   selectedId,
   onSelect,
+  onActivate,
   onDoubleClick,
   onContextMenuIcon,
 }: DesktopIconsProps) {
@@ -108,6 +117,14 @@ export function DesktopIcons({
       }
     )
     .filter(Boolean) as DesktopIcon[];
+
+  const handleAppActivate = (appId: string) => {
+    if (onActivate) {
+      onActivate(appId);
+    } else if (onDoubleClick) {
+      onDoubleClick(appId);
+    }
+  };
 
   // Keyboard navigation between the two stacked icons
   useEffect(() => {
@@ -141,7 +158,7 @@ export function DesktopIcons({
       if (e.key === 'Enter') {
         e.preventDefault();
         const active = orderedIcons[currentIndex];
-        onDoubleClick(active.appId || active.id);
+        handleAppActivate(active.appId || active.id);
         return;
       }
 
@@ -158,7 +175,7 @@ export function DesktopIcons({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, orderedIcons, onSelect, onDoubleClick]);
+  }, [selectedId, orderedIcons, onSelect, onActivate, onDoubleClick]);
 
   return (
     <div className="os-desktop-icons" role="region" aria-label="Desktop application shortcuts">
@@ -173,7 +190,8 @@ export function DesktopIcons({
             icon={icon}
             isSelected={selectedId === icon.id}
             onSelect={onSelect}
-            onDoubleClick={onDoubleClick}
+            onActivate={handleAppActivate}
+            onDoubleClick={handleAppActivate}
             onContextMenuIcon={onContextMenuIcon}
           />
         ))}
