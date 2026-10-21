@@ -1,4 +1,6 @@
 import { useWindowStore } from '../../stores/useWindowStore';
+import { useDesktopStore } from '../../stores/useDesktopStore';
+import { useMascotStore } from '../../stores/useMascotStore';
 import { vfs } from '../vfs';
 import { getAppIcon } from '../icons';
 
@@ -50,6 +52,166 @@ export const APP_ALIASES: Record<string, string> = {
   'resume-viewer': 'resume',
   'pdf-viewer': 'resume',
 };
+
+export interface NaturalLanguageAppMatch {
+  action: 'open_app';
+  appId: string;
+  appName: string;
+}
+
+export function parseNaturalLanguageAppRequest(prompt: string): NaturalLanguageAppMatch | null {
+  if (!prompt || typeof prompt !== 'string') return null;
+  const clean = prompt
+    .toLowerCase()
+    .trim()
+    .replace(/[?!.,;:()'"`]/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  const triggers = [
+    'open',
+    'launch',
+    'start',
+    'show me',
+    'show',
+    'take me to',
+    'go to',
+    'switch to',
+    'navigate to',
+    'view',
+    'run',
+  ];
+
+  let stripped = clean;
+  const prefixes = [
+    'hey mimi please',
+    'hey mimi can you',
+    'hey mimi could you',
+    'hey mimi',
+    'mimi please',
+    'mimi can you',
+    'mimi could you',
+    'mimi',
+    'please',
+    'can you please',
+    'could you please',
+    'can you',
+    'could you',
+  ];
+
+  for (const p of prefixes) {
+    if (stripped.startsWith(p + ' ')) {
+      stripped = stripped.slice(p.length).trim();
+      break;
+    }
+  }
+
+  let actionVerbFound = false;
+  let remaining = stripped;
+
+  for (const t of triggers) {
+    if (remaining.startsWith(t + ' ')) {
+      actionVerbFound = true;
+      remaining = remaining.slice(t.length).trim();
+      break;
+    }
+  }
+
+  const appTarget = remaining
+    .replace(/^(the|my|an|a)\s+/, '')
+    .replace(/\s+(app|application|window|tab|tool|page|section)$/, '')
+    .replace(/\s+(please|now|for me|thanks|thank you)$/, '')
+    .trim();
+
+  const appMap: Record<string, string> = {
+    terminal: 'terminal',
+    cli: 'terminal',
+    'command line': 'terminal',
+    shell: 'terminal',
+    console: 'terminal',
+    bash: 'terminal',
+
+    files: 'files',
+    'file manager': 'files',
+    'file explorer': 'files',
+    'file browser': 'files',
+    vfs: 'files',
+    'virtual file system': 'files',
+    filesystem: 'files',
+    documents: 'files',
+
+    projects: 'projects',
+    portfolio: 'projects',
+    'portfolio projects': 'projects',
+    work: 'projects',
+    works: 'projects',
+
+    about: 'about',
+    'about me': 'about',
+    bio: 'about',
+    profile: 'about',
+    'developer info': 'about',
+
+    settings: 'settings',
+    'system settings': 'settings',
+    preferences: 'settings',
+    config: 'settings',
+    configuration: 'settings',
+
+    'mimi ai': 'mimi-ai',
+    mimiai: 'mimi-ai',
+    'mimi-ai': 'mimi-ai',
+    ai: 'mimi-ai',
+    'ai chat': 'mimi-ai',
+    assistant: 'mimi-ai',
+
+    skills: 'skills',
+    'tech stack': 'skills',
+    'technical skills': 'skills',
+    stack: 'skills',
+
+    experience: 'experience',
+    'work experience': 'experience',
+    career: 'experience',
+    jobs: 'experience',
+    history: 'experience',
+
+    certificates: 'certificates',
+    certifications: 'certificates',
+    credentials: 'certificates',
+    certs: 'certificates',
+
+    resume: 'resume',
+    cv: 'resume',
+    'resume viewer': 'resume',
+    'curriculum vitae': 'resume',
+
+    'code editor': 'editor',
+    editor: 'editor',
+    'text editor': 'editor',
+
+    contact: 'contact',
+    'contact me': 'contact',
+    'get in touch': 'contact',
+
+    snake: 'snake',
+    'snake game': 'snake',
+    'cyber snake': 'snake',
+    game: 'snake',
+  };
+
+  const matchedId = appMap[appTarget] || APP_ALIASES[appTarget];
+  if (matchedId && APPROVED_APPS[matchedId]) {
+    if (actionVerbFound || stripped === appTarget || stripped === `${appTarget} app`) {
+      return {
+        action: 'open_app',
+        appId: matchedId,
+        appName: APPROVED_APPS[matchedId].name,
+      };
+    }
+  }
+
+  return null;
+}
 
 export interface ActionResult {
   success: boolean;
@@ -279,6 +441,19 @@ export async function executeMimiOsAction(
   if (validation.name === 'open_app') {
     const appId = sanitizedArgs.appId as string;
     const appMeta = APPROVED_APPS[appId];
+
+    // If mascot is enabled, trigger and await companion paw navigation
+    if (useDesktopStore.getState().mascotEnabled) {
+      await useMascotStore.getState().navigateToApp(appId, `Opening ${appMeta.name}!`);
+      const existing = store.windows.find((w) => w.appId === appId);
+      return {
+        success: true,
+        action: 'open_app',
+        appId,
+        windowId: existing?.id,
+        message: `${appMeta.name} opened successfully.`,
+      };
+    }
 
     // Check if app is already open
     const existing = store.windows.find((w) => w.appId === appId);

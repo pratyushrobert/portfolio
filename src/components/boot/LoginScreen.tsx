@@ -77,8 +77,12 @@ export function LoginScreen({ onLoginSuccess, onPowerOff }: LoginScreenProps) {
         const activeBrightness = isNaN(rawBrightness) ? 100 : Math.min(100, Math.max(0, rawBrightness));
         const activeOverlayOpacity = isNaN(rawOverlayOpacity) ? 30 : Math.min(100, Math.max(0, rawOverlayOpacity));
 
+        // Preserve user's local wallpaper choice if already set in persistent store
+        const currentLocal = useDesktopStore.getState().wallpaper;
+        const effectiveWallpaper = currentLocal && currentLocal.trim() ? currentLocal : (config.wallpaper_url ?? '');
+
         setBackgroundConfig({
-          wallpaper: config.wallpaper_url ?? '',
+          wallpaper: effectiveWallpaper,
           wallpaperPosition: config.wallpaper_position ?? 'center',
           wallpaperSize: config.wallpaper_size ?? 'cover',
           wallpaperOverlay: config.wallpaper_overlay ?? '#000000',

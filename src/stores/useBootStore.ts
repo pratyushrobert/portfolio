@@ -27,8 +27,18 @@ interface BootState {
   setError: (msg: string) => void;
 }
 
+function getInitialPhase(): BootPhase {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('boot') === 'desktop' || params.has('skipBoot')) {
+      return 'desktop';
+    }
+  }
+  return 'powered_off';
+}
+
 export const useBootStore = create<BootState>((set) => ({
-  phase: 'powered_off',
+  phase: getInitialPhase(),
   errorMessage: null,
   localUser: { name: 'Guest', type: 'guest/local' },
   setPhase: (phase) => set({ phase, errorMessage: null }),
@@ -39,3 +49,8 @@ export const useBootStore = create<BootState>((set) => ({
   logoutToLogin: () => set({ phase: 'login', errorMessage: null }),
   setError: (msg) => set({ phase: 'error', errorMessage: msg }),
 }));
+
+if (typeof window !== 'undefined') {
+  (window as unknown as { useBootStore?: typeof useBootStore }).useBootStore = useBootStore;
+}
+

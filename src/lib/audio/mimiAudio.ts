@@ -23,8 +23,6 @@ export interface PlayMeowOptions {
  * Guarantees zero unhandled promise rejections, zero network failures, and no external calls.
  */
 export function playMimiMeow(options: PlayMeowOptions = {}): boolean {
-  if (typeof window === 'undefined') return false;
-
   const now = Date.now();
   if (!options.force && now - lastMeowTimestamp < MEOW_COOLDOWN_MS) {
     return false;
@@ -52,14 +50,18 @@ export function playMimiMeow(options: PlayMeowOptions = {}): boolean {
 
   // 1. Attempt to play bundled audio asset
   try {
-    const audio = new Audio('/assets/audio/mimi-meow.mp3');
-    audio.volume = normalizedVolume;
-    const playPromise = audio.play();
-    if (playPromise) {
-      playPromise.catch(() => {
-        // Fallback to Web Audio synthesis if audio asset is corrupt, missing, or blocked by browser autoplay
-        synthesizeMimiMeow(normalizedVolume);
-      });
+    if (typeof Audio !== 'undefined') {
+      const audio = new Audio('/assets/audio/mimi-meow.mp3');
+      audio.volume = normalizedVolume;
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(() => {
+          // Fallback to Web Audio synthesis if audio asset is corrupt, missing, or blocked by browser autoplay
+          synthesizeMimiMeow(normalizedVolume);
+        });
+      }
+    } else {
+      synthesizeMimiMeow(normalizedVolume);
     }
   } catch {
     synthesizeMimiMeow(normalizedVolume);
@@ -75,8 +77,11 @@ export function playMimiMeow(options: PlayMeowOptions = {}): boolean {
 export function synthesizeMimiMeow(volume = 0.25): void {
   try {
     const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      (typeof window !== 'undefined' &&
+        (window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)) ||
+      (typeof globalThis !== 'undefined' &&
+        (globalThis as unknown as { AudioContext?: typeof AudioContext }).AudioContext);
     if (!AudioCtx) return;
 
     const ctx = new AudioCtx();

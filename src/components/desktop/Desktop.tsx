@@ -28,6 +28,8 @@ import {
 } from '../portfolio';
 import { SnakeGame } from '../game/SnakeGame';
 import { MimiAIApp } from '../ai/MimiAIApp';
+import { MimiCompanion } from '../mascot/MimiCompanion';
+import { useMascotStore } from '../../stores/useMascotStore';
 import { getAppIcon } from '../../lib/icons';
 import type { DesktopOpenRequest, DesktopIcon } from '../../types/desktop';
 import './Desktop.css';
@@ -39,6 +41,7 @@ export function Desktop() {
   const snapIconsToGrid = useDesktopStore(state => state.snapIconsToGrid);
   const arrangeIcons = useDesktopStore(state => state.arrangeIcons);
   const resetIconPosition = useDesktopStore(state => state.resetIconPosition);
+  const mascotEnabled = useDesktopStore(state => state.mascotEnabled ?? true);
 
   const [selectedIconId, setSelectedIconId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -253,8 +256,18 @@ export function Desktop() {
             setContextMenu(null);
             resetIconPosition(iconId);
           }}
+          mascotEnabled={mascotEnabled}
+          onToggleMascot={() => {
+            setContextMenu(null);
+            if (mascotEnabled) {
+              useMascotStore.getState().dismissMascot();
+            } else {
+              useMascotStore.getState().showMascot();
+            }
+          }}
         />
       )}
+      {mascotEnabled && <MimiCompanion onOpenApp={handleOpenApp} />}
     </div>
   );
 }

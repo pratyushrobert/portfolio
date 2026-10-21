@@ -1,0 +1,361 @@
+/* ==========================================================================
+   MimiOS Pixel Cat Mascot Styles
+   Crisp monochrome pixel-art with subtle gray depth and responsive motion.
+   ========================================================================== */
+
+.mimi-pixel-cat-root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  background: transparent;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.mimi-pixel-cat-svg {
+  display: block;
+  shape-rendering: crispEdges;
+  overflow: visible;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Hover effect */
+.mimi-pixel-cat-root:hover .mimi-pixel-cat-svg {
+  transform: scale(1.05);
+}
+
+/* ================= MOOD ANIMATIONS ================= */
+
+/* 1. IDLE: subtle breathing & tail sway */
+.mimi-mood-idle .cat-tail {
+  transform-origin: 22px 24px;
+  animation: mimi-tail-sway 2.4s ease-in-out infinite alternate;
+}
+
+.mimi-mood-idle .cat-head {
+  transform-origin: 16px 14px;
+  animation: mimi-breathe 3.2s ease-in-out infinite;
+}
+
+.mimi-mood-idle .cat-eye-pupil {
+  animation: mimi-natural-blink 4.5s ease-in-out infinite;
+}
+
+/* 2. WALKING: paws stepping, head bobbing */
+.mimi-mood-walking .cat-head {
+  transform-origin: 16px 14px;
+  animation: mimi-head-bob 0.4s ease-in-out infinite alternate;
+}
+
+.mimi-mood-walking .paw-left {
+  animation: mimi-step-left 0.4s ease-in-out infinite alternate;
+}
+
+.mimi-mood-walking .paw-right {
+  animation: mimi-step-right 0.4s ease-in-out infinite alternate;
+}
+
+.mimi-mood-walking .cat-tail {
+  transform-origin: 22px 24px;
+  animation: mimi-tail-fast 0.4s ease-in-out infinite alternate;
+}
+
+/* 3. LOOKING AROUND: gaze shifting & ear twitch */
+.mimi-mood-looking_around .cat-head {
+  transform-origin: 16px 14px;
+  animation: mimi-look-around 2.8s ease-in-out infinite;
+}
+
+.mimi-mood-looking_around .ear-left {
+  transform-origin: 10px 8px;
+  animation: mimi-ear-twitch 1.8s ease-in-out infinite;
+}
+
+/* 4. GREETING: waving paw & sparkling */
+.mimi-mood-greeting .paw-wave {
+  transform-origin: 22px 18px;
+  animation: mimi-paw-wave 0.5s ease-in-out infinite alternate;
+}
+
+.mimi-mood-greeting .greeting-sparkle {
+  animation: mimi-sparkle-float 1.2s ease-in-out infinite;
+}
+
+/* 5. TALKING: mouth rhythmic movement */
+.mimi-mood-talking .cat-mouth-open {
+  animation: mimi-talk-mouth 0.28s ease-in-out infinite alternate;
+}
+
+.mimi-mood-talking .cat-head {
+  transform-origin: 16px 14px;
+  animation: mimi-talk-head 0.56s ease-in-out infinite alternate;
+}
+
+/* 6. THINKING: eyes glancing up, tail tap, thought bubble */
+.mimi-mood-thinking .cat-tail {
+  transform-origin: 22px 24px;
+  animation: mimi-tail-tap 0.7s ease-in-out infinite;
+}
+
+.mimi-mood-thinking .thought-bubble {
+  animation: mimi-thought-pulse 1.4s ease-in-out infinite alternate;
+}
+
+/* 7. HAPPY: content purr vibration & sparkles */
+.mimi-mood-happy .cat-body,
+.mimi-mood-happy .cat-head {
+  animation: mimi-purr 0.18s ease-in-out infinite;
+}
+
+.mimi-mood-happy .happy-sparkle {
+  animation: mimi-sparkle-float 1.4s ease-in-out infinite;
+}
+
+/* 8. CONFUSED: tilted head & question mark */
+.mimi-mood-confused .cat-head {
+  transform-origin: 16px 16px;
+  transform: rotate(-10deg);
+}
+
+.mimi-mood-confused .confused-question {
+  animation: mimi-float-question 1.5s ease-in-out infinite alternate;
+}
+
+/* 9. SLEEPING: curled body, slow deep breathing, floating Zzz */
+.mimi-mood-sleeping .cat-body-sleeping {
+  transform-origin: 16px 20px;
+  animation: mimi-sleep-breathe 3.6s ease-in-out infinite;
+}
+
+.mimi-mood-sleeping .sleep-zzz {
+  animation: mimi-zzz-float 2.2s linear infinite;
+}
+
+/* ================= KEYFRAMES ================= */
+
+@keyframes mimi-tail-sway {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(14deg);
+  }
+}
+
+@keyframes mimi-tail-fast {
+  0% {
+    transform: rotate(-6deg);
+  }
+  100% {
+    transform: rotate(16deg);
+  }
+}
+
+@keyframes mimi-tail-tap {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+@keyframes mimi-breathe {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.8px);
+  }
+}
+
+@keyframes mimi-sleep-breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02, 0.98);
+  }
+}
+
+@keyframes mimi-natural-blink {
+  0%, 94%, 98%, 100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes mimi-head-bob {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-1.2px);
+  }
+}
+
+@keyframes mimi-step-left {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes mimi-step-right {
+  0% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes mimi-look-around {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1.8px);
+  }
+  75% {
+    transform: translateX(1.8px);
+  }
+}
+
+@keyframes mimi-ear-twitch {
+  0%, 80%, 100% {
+    transform: rotate(0deg);
+  }
+  85% {
+    transform: rotate(-10deg);
+  }
+  90% {
+    transform: rotate(6deg);
+  }
+  95% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes mimi-paw-wave {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-25deg);
+  }
+}
+
+@keyframes mimi-talk-mouth {
+  0% {
+    transform: scaleY(0.2);
+  }
+  100% {
+    transform: scaleY(1.3);
+  }
+}
+
+@keyframes mimi-talk-head {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-0.6px);
+  }
+}
+
+@keyframes mimi-thought-pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes mimi-purr {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(0.3px, -0.3px);
+  }
+  75% {
+    transform: translate(-0.3px, 0.3px);
+  }
+}
+
+@keyframes mimi-float-question {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes mimi-zzz-float {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.7);
+  }
+  30% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(5px, -8px) scale(1.1);
+  }
+}
+
+@keyframes mimi-sparkle-float {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(45deg);
+  }
+}
+
+/* ================= REDUCED MOTION ================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .mimi-pixel-cat-svg,
+  .mimi-mood-idle .cat-tail,
+  .mimi-mood-idle .cat-head,
+  .mimi-mood-idle .cat-eye-pupil,
+  .mimi-mood-walking .cat-head,
+  .mimi-mood-walking .paw-left,
+  .mimi-mood-walking .paw-right,
+  .mimi-mood-walking .cat-tail,
+  .mimi-mood-looking_around .cat-head,
+  .mimi-mood-looking_around .ear-left,
+  .mimi-mood-greeting .paw-wave,
+  .mimi-mood-greeting .greeting-sparkle,
+  .mimi-mood-talking .cat-mouth-open,
+  .mimi-mood-talking .cat-head,
+  .mimi-mood-thinking .cat-tail,
+  .mimi-mood-thinking .thought-bubble,
+  .mimi-mood-happy .cat-body,
+  .mimi-mood-happy .cat-head,
+  .mimi-mood-happy .happy-sparkle,
+  .mimi-mood-confused .confused-question,
+  .mimi-mood-sleeping .cat-body-sleeping,
+  .mimi-mood-sleeping .sleep-zzz {
+    animation: none !important;
+    transition: none !important;
+  }
+}

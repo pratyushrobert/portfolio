@@ -199,3 +199,7 @@ export const useWindowStore = create<WindowStoreState>((set, get) => ({
 
   getMinimizedWindows: () => get().windows.filter(w => w.isMinimized),
 }));
+
+if (typeof window !== 'undefined') {
+  (window as unknown as { useWindowStore?: typeof useWindowStore }).useWindowStore = useWindowStore;
+}

@@ -22,11 +22,15 @@ import {
 } from '../../lib/api/ai';
 import {
   executeMimiOsAction,
+  parseNaturalLanguageAppRequest,
   type MimiActionName,
   type ActionResult,
 } from '../../lib/ai/actions';
 import { MimiMascot } from './MimiMascot';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { useMascotStore } from '../../stores/useMascotStore';
+import { useWindowStore } from '../../stores/useWindowStore';
+import { playMimiMeow } from '../../lib/audio/mimiAudio';
 import type { DesktopOpenRequest } from '../../types/desktop';
 import './MimiAI.css';
 
@@ -149,6 +153,20 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
     conversationsRef.current = conversations;
   }, [conversations]);
 
+  // Synchronize window minimize/close with mascot mood reset
+  useEffect(() => {
+    const unsub = useWindowStore.subscribe((state) => {
+      const myWindow = state.windows.find((w) => w.id === _windowId);
+      if (myWindow?.isMinimized) {
+        useMascotStore.getState().setMood('idle');
+      }
+    });
+    return () => {
+      unsub();
+      useMascotStore.getState().setMood('idle');
+    };
+  }, [_windowId]);
+
   const activeConversation = conversations.find((c) => c.id === activeConvId) || conversations[0];
 
   const formatActionArgs = (args: Record<string, unknown>): string => {
@@ -198,6 +216,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
       setIsGenerating(true);
       const followUpAbortController = new AbortController();
       abortControllerRef.current = followUpAbortController;
+      useMascotStore.getState().setMood('thinking');
 
       try {
         const updatedMessages = [...currentConv.messages, toolMsg];
@@ -224,10 +243,16 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
         }
 
         let followUpAccumulated = '';
+        let followUpMeowPlayed = false;
         await aiApi.streamChat(
           chatPayload,
           { temperature: 0.6, tools_enabled: false },
           (chunk) => {
+            if (chunk.trim().length > 0 && !followUpMeowPlayed) {
+              followUpMeowPlayed = true;
+              playMimiMeow();
+              useMascotStore.getState().setMood('talking');
+            }
             followUpAccumulated += chunk;
             setConversations((prev) =>
               prev.map((c) => {
@@ -252,10 +277,12 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
         if (!followUpAbortController.signal.aborted) {
           const errMsg = err instanceof Error ? err.message : 'Follow-up inference failed';
           setErrorBanner(errMsg);
+          useMascotStore.getState().setMoodWithTimeout('confused', 3000, 'idle');
         }
       } finally {
         setIsGenerating(false);
         abortControllerRef.current = null;
+        useMascotStore.getState().setMood('idle');
       }
     },
     [activeConvId]
@@ -280,6 +307,12 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
       );
 
       const result = await executeMimiOsAction(actionState.name, actionState.arguments, _windowId);
+
+      if (result.success) {
+        useMascotStore.getState().setMoodWithTimeout('happy', 2500, 'idle');
+      } else {
+        useMascotStore.getState().setMoodWithTimeout('confused', 2500, 'idle');
+      }
 
       setConversations((prev) =>
         prev.map((c) => {
@@ -492,6 +525,95 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
       }
     }
 
+    // 4. Check for direct natural language app navigation requests
+    const directAction = parseNaturalLanguageAppRequest(trimmed);
+    if (directAction) {
+      const userMsg: Message = {
+        id: `msg-${Date.now()}-u`,
+        role: 'user',
+        content: trimmed,
+        timestamp: Date.now(),
+      };
+
+      const assistantMsgId = `msg-${Date.now() + 1}-a`;
+      const actionState: ActionExecutionState = {
+        id: `action-${Date.now()}`,
+        name: directAction.action,
+        arguments: { appId: directAction.appId },
+        status: 'executing',
+        requiresConfirmation: false,
+      };
+
+      const initialAssistantMsg: Message = {
+        id: assistantMsgId,
+        role: 'assistant',
+        content: `I'm on it! Guiding you to **${directAction.appName}**...`,
+        timestamp: Date.now(),
+        action: actionState,
+      };
+
+      const previousValidMessages = activeConversation.messages.filter(
+        (m) => typeof m.content === 'string' && m.content.trim().length > 0
+      );
+      const isFirstMessage = previousValidMessages.length === 0;
+      const computedTitle = isFirstMessage
+        ? trimmed.slice(0, 36).trim() + (trimmed.length > 36 ? '...' : '')
+        : activeConversation.title;
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === activeConvId) {
+            return {
+              ...c,
+              title: computedTitle,
+              messages: [...previousValidMessages, userMsg, initialAssistantMsg],
+            };
+          }
+          return c;
+        })
+      );
+
+      setIsGenerating(true);
+      playMimiMeow({ force: true });
+      useMascotStore.getState().setMood('greeting');
+
+      try {
+        const result = await executeMimiOsAction('open_app', { appId: directAction.appId }, _windowId);
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === activeConvId) {
+              return {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === assistantMsgId
+                    ? {
+                        ...m,
+                        content: `Opened **${directAction.appName}** for you! Let me know if you need anything else.`,
+                        action: {
+                          ...actionState,
+                          status: result.success ? 'confirmed' : 'failed',
+                          result,
+                        },
+                      }
+                    : m
+                ),
+              };
+            }
+            return c;
+          })
+        );
+        useMascotStore.getState().setMoodWithTimeout('happy', 2500, 'idle');
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : 'Failed to launch application';
+        setErrorBanner(errMsg);
+        useMascotStore.getState().setMoodWithTimeout('confused', 2500, 'idle');
+      } finally {
+        setIsGenerating(false);
+        isSubmittingRef.current = false;
+      }
+      return;
+    }
+
     const userMsg: Message = {
       id: `msg-${Date.now()}-u`,
       role: 'user',
@@ -534,6 +656,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
     setIsGenerating(true);
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+    useMascotStore.getState().setMood('thinking');
 
     const chatHistory: ChatMessage[] = [
       ...previousValidMessages.map((m) => {
@@ -565,10 +688,16 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
     try {
       let accumulated = '';
       let detectedToolCall: ValidatedToolCall | null = null;
+      let hasPlayedMeow = false;
       await aiApi.streamChat(
         chatHistory,
         { temperature: 0.6 },
         (chunk) => {
+          if (chunk.trim().length > 0 && !hasPlayedMeow) {
+            hasPlayedMeow = true;
+            playMimiMeow();
+            useMascotStore.getState().setMood('talking');
+          }
           accumulated += chunk;
           setConversations((prev) =>
             prev.map((c) => {
@@ -654,6 +783,11 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
             })
           );
           const result = await executeMimiOsAction(tc.name as MimiActionName, tc.arguments, _windowId);
+          if (result.success) {
+            useMascotStore.getState().setMoodWithTimeout('happy', 2500, 'idle');
+          } else {
+            useMascotStore.getState().setMoodWithTimeout('confused', 2500, 'idle');
+          }
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id === activeConvId) {
@@ -674,6 +808,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
       }
     } catch (err: unknown) {
       if (abortController.signal.aborted) {
+        useMascotStore.getState().setMood('idle');
         // Clean up empty assistant placeholder if aborted before content was produced
         setConversations((prev) =>
           prev.map((c) => {
@@ -690,6 +825,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
         );
         return;
       }
+      useMascotStore.getState().setMoodWithTimeout('confused', 3000, 'idle');
       const errMsg = err instanceof Error ? err.message : 'AI inference failed';
       setErrorBanner(errMsg);
       // Clean up empty assistant placeholder on error to prevent corrupted subsequent messages
@@ -710,6 +846,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
       isSubmittingRef.current = false;
       setIsGenerating(false);
       abortControllerRef.current = null;
+      useMascotStore.getState().setMood('idle');
     }
   };
 
@@ -755,6 +892,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
     setIsGenerating(true);
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+    useMascotStore.getState().setMood('thinking');
 
     const chatHistory: ChatMessage[] = historyUpToUser.map((m) => ({
       role: m.role,
@@ -764,10 +902,16 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
     try {
       let accumulated = '';
       let detectedToolCall: ValidatedToolCall | null = null;
+      let hasPlayedMeow = false;
       await aiApi.streamChat(
         chatHistory,
         { temperature: 0.6 },
         (chunk) => {
+          if (chunk.trim().length > 0 && !hasPlayedMeow) {
+            hasPlayedMeow = true;
+            playMimiMeow();
+            useMascotStore.getState().setMood('talking');
+          }
           accumulated += chunk;
           setConversations((prev) =>
             prev.map((c) => {
@@ -853,6 +997,11 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
             })
           );
           const result = await executeMimiOsAction(tc.name as MimiActionName, tc.arguments, _windowId);
+          if (result.success) {
+            useMascotStore.getState().setMoodWithTimeout('happy', 2500, 'idle');
+          } else {
+            useMascotStore.getState().setMoodWithTimeout('confused', 2500, 'idle');
+          }
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id === activeConvId) {
@@ -873,6 +1022,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
       }
     } catch (err: unknown) {
       if (abortController.signal.aborted) {
+        useMascotStore.getState().setMood('idle');
         setConversations((prev) =>
           prev.map((c) => {
             if (c.id === activeConvId) {
@@ -888,6 +1038,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
         );
         return;
       }
+      useMascotStore.getState().setMoodWithTimeout('confused', 3000, 'idle');
       const errMsg = err instanceof Error ? err.message : 'AI inference failed';
       setErrorBanner(errMsg);
       setConversations((prev) =>
@@ -907,6 +1058,7 @@ export function MimiAIApp({ windowId: _windowId, appParams }: MimiAIAppProps) {
       isSubmittingRef.current = false;
       setIsGenerating(false);
       abortControllerRef.current = null;
+      useMascotStore.getState().setMood('idle');
     }
   };
 

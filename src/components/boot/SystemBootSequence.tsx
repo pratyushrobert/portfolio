@@ -79,15 +79,23 @@ export function SystemBootSequence({ onComplete, onError }: SystemBootSequencePr
           const activeOverlayOpacity = isNaN(rawOverlayOpacity) ? 30 : Math.min(100, Math.max(0, rawOverlayOpacity));
           const activeGlassBlur = isNaN(rawGlassBlur) ? 5 : Math.min(30, Math.max(0, rawGlassBlur));
 
+          // Preserve user's local wallpaper choice if already set in persistent store
+          const currentLocal = useDesktopStore.getState().wallpaper;
+          const effectiveWallpaper = currentLocal && currentLocal.trim() ? currentLocal : (config.wallpaper_url ?? '');
+
+          // Preserve user's local glassBlur choice if already set in persistent store
+          const currentLocalBlur = useDesktopStore.getState().glassBlur;
+          const effectiveGlassBlur = typeof currentLocalBlur === 'number' ? currentLocalBlur : activeGlassBlur;
+
           useDesktopStore.getState().setBackgroundConfig({
-            wallpaper: config.wallpaper_url ?? '',
+            wallpaper: effectiveWallpaper,
             wallpaperPosition: config.wallpaper_position ?? 'center',
             wallpaperSize: config.wallpaper_size ?? 'cover',
             wallpaperOverlay: config.wallpaper_overlay ?? '#000000',
             wallpaperColor: config.wallpaper_color && config.wallpaper_color !== '#1a1a2e' ? config.wallpaper_color : '#08090d',
             wallpaperBrightness: activeBrightness,
             wallpaperOverlayOpacity: activeOverlayOpacity,
-            glassBlur: activeGlassBlur,
+            glassBlur: effectiveGlassBlur,
           });
         }
 

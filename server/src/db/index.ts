@@ -125,6 +125,11 @@ async function seedDatabase(db: AppDatabase, config: RuntimeConfig): Promise<voi
       ON CONFLICT (key) DO NOTHING
     `, [key, value, description, now, now]);
   }
+
+  // Ensure legacy seeded default 18px for glass_blur is corrected to true default 5px
+  await db.execute(
+    "UPDATE site_config SET value = '5' WHERE key = 'glass_blur' AND value = '18' AND created_at = updated_at"
+  );
 }
 
 export async function initializeDatabase(config: RuntimeConfig): Promise<AppDatabase> {

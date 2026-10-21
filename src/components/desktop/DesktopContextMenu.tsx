@@ -8,6 +8,7 @@ import {
   Settings,
   RotateCcw,
   ExternalLink,
+  Cat,
 } from 'lucide-react';
 import type { DesktopIcon } from '../../types/desktop';
 import './Desktop.css';
@@ -22,6 +23,8 @@ export interface DesktopContextMenuProps {
   onOpenApp: (appId: string) => void;
   onChangeWallpaper: () => void;
   onResetIconPosition?: (iconId: string) => void;
+  mascotEnabled?: boolean;
+  onToggleMascot?: () => void;
 }
 
 export function DesktopContextMenu({
@@ -34,6 +37,8 @@ export function DesktopContextMenu({
   onOpenApp,
   onChangeWallpaper,
   onResetIconPosition,
+  mascotEnabled,
+  onToggleMascot,
 }: DesktopContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: x, top: y });
@@ -242,6 +247,24 @@ export function DesktopContextMenu({
           <Settings size={16} />
         </span>
         <span className="desktop-context-menu-label">Settings</span>
+      </button>
+
+      <div className="desktop-context-menu-separator" role="separator" />
+
+      <button
+        className="desktop-context-menu-item"
+        role="menuitem"
+        onClick={() => {
+          onClose();
+          onToggleMascot?.();
+        }}
+      >
+        <span className="desktop-context-menu-icon">
+          <Cat size={16} />
+        </span>
+        <span className="desktop-context-menu-label">
+          {mascotEnabled ? 'Hide Mimi Mascot' : 'Show Mimi Mascot'}
+        </span>
       </button>
     </div>
   );

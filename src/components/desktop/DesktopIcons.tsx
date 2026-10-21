@@ -60,6 +60,7 @@ function DesktopIconItem({
       ref={buttonRef}
       type="button"
       data-icon-id={icon.id}
+      data-app-id={icon.appId || icon.id}
       className={`desktop-glass-icon ${isSelected ? 'selected' : ''}`}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}

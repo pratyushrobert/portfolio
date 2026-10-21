@@ -1,6 +1,8 @@
 import type { Command } from '../commands';
 import { unlockDiscovery } from '../../../lib/discovery';
 import { useWindowStore } from '../../../stores/useWindowStore';
+import { useDesktopStore } from '../../../stores/useDesktopStore';
+import { useMascotStore } from '../../../stores/useMascotStore';
 
 export function launchMimiAI(initialPrompt?: string): string {
   unlockDiscovery('mimi_cat');
@@ -52,11 +54,37 @@ export function launchMimiAI(initialPrompt?: string): string {
 export const mimiCommand: Command = {
   name: 'mimi',
   description: '🐱 MimiOS Security Mascot Daemon & MimiAI Companion',
-  usage: 'mimi [ai [prompt] | treat | pet | status]',
+  usage: 'mimi [ai [prompt] | treat | pet | status | hide | show | close]',
   handler: async (args) => {
     unlockDiscovery('mimi_cat');
 
     const sub = args[0]?.toLowerCase();
+
+    if (sub === 'close' || sub === 'hide' || sub === 'dismiss') {
+      useMascotStore.getState().dismissMascot();
+      return 'Mimi mascot hidden. You can reopen anytime with "mimi show" or from the desktop context menu.';
+    }
+
+    if (sub === 'show' || sub === 'open' || sub === 'start') {
+      useMascotStore.getState().showMascot();
+      return 'Mimi mascot restored to desktop. 🐾';
+    }
+
+    if (sub === 'toggle') {
+      const isEnabled = useDesktopStore.getState().mascotEnabled;
+      if (isEnabled) {
+        useMascotStore.getState().dismissMascot();
+        return 'Mimi mascot hidden.';
+      } else {
+        useMascotStore.getState().showMascot();
+        return 'Mimi mascot restored to desktop. 🐾';
+      }
+    }
+
+    if (sub === 'tour' || sub === 'guide') {
+      useMascotStore.getState().startGuide();
+      return 'Starting interactive MimiOS Tour... 🧭 Follow Mimi on your desktop!';
+    }
 
     if (sub === 'ai') {
       const prompt = args.slice(1).join(' ').trim();
@@ -96,10 +124,21 @@ Companion Mode: Ready ('mimi ai [prompt]' or 'ai')
 
 Mimi is supervising this session with strict scrutiny.
 Commands:
+  mimi tour          - Launch the interactive MimiOS desktop tour guide
   mimi ai [prompt]  - Launch or prompt the MimiAI Cyber Ninja Cat companion
   ai [prompt]        - Quick shortcut to MimiAI
   mimi treat         - Offer a fish treat
   mimi pet           - Pet the cat for compilation luck
 `;
+  },
+};
+
+export const tourCommand: Command = {
+  name: 'tour',
+  description: '🧭 Launch the interactive MimiOS desktop tour guide',
+  usage: 'tour',
+  handler: async () => {
+    useMascotStore.getState().startGuide();
+    return 'Starting interactive MimiOS Tour... 🧭 Follow Mimi on your desktop!';
   },
 };

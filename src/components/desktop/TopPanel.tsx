@@ -12,10 +12,12 @@ import {
   BatteryCharging,
   Shield,
   User,
+  Cat,
 } from 'lucide-react';
 import { useDesktopStore } from '../../stores/useDesktopStore';
 import { useWindowStore } from '../../stores/useWindowStore';
 import { useBootStore } from '../../stores/useBootStore';
+import { useMascotStore } from '../../stores/useMascotStore';
 import { useAdminAuth } from '../../lib/auth/adminAuth';
 import { AppLauncher } from './AppLauncher';
 import { AppLauncherPanel } from './AppLauncherPanel';
@@ -294,6 +296,37 @@ function LocalUserBadge({
   );
 }
 
+/* ================= MIMI MASCOT TRAY BUTTON ================= */
+function MimiTrayButton() {
+  const mascotEnabled = useDesktopStore((s) => s.mascotEnabled ?? true);
+  const isCompanionOpen = useMascotStore((s) => s.isCompanionOpen);
+
+  const handleClick = () => {
+    if (!mascotEnabled) {
+      // If mascot is hidden on desktop, restore it!
+      useDesktopStore.getState().setMascotEnabled(true);
+      useMascotStore.getState().showMascot();
+      useMascotStore.getState().speak('Mrrp! I am back!', { durationMs: 3000 });
+    } else {
+      // If mascot is visible, toggle companion flyout
+      useMascotStore.getState().toggleCompanion();
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className={`panel-button ${mascotEnabled ? 'active' : ''} ${isCompanionOpen ? 'focused' : ''}`}
+      onClick={handleClick}
+      aria-label={mascotEnabled ? (isCompanionOpen ? 'Close Mimi Companion' : 'Open Mimi Companion') : 'Show Mimi Mascot'}
+      title={mascotEnabled ? (isCompanionOpen ? 'Close Mimi Companion' : 'Open Mimi Companion') : 'Show Mimi Mascot'}
+      data-app-id="mimi-mascot"
+    >
+      <Cat size={16} />
+    </button>
+  );
+}
+
 /* ================= SETTINGS SHORTCUT BUTTON ================= */
 function SettingsTrayButton() {
   const windows = useWindowStore((state) => state.windows);
@@ -334,6 +367,7 @@ function SettingsTrayButton() {
       onClick={handleClick}
       aria-label="Settings"
       title="Settings"
+      data-app-id="settings"
     >
       <Settings size={15} />
     </button>
@@ -593,6 +627,7 @@ export function TopPanel() {
               aria-expanded={activePanel === 'app_launcher'}
               aria-haspopup="dialog"
               aria-label="Applications Launcher"
+              data-app-id="app_launcher"
             >
               <NineDotsIcon size={16} />
             </button>
@@ -618,6 +653,7 @@ export function TopPanel() {
                     onMouseEnter={(e) => showTooltip(app.name, e.currentTarget)}
                     onMouseLeave={hideTooltip}
                     aria-label={`Open ${app.name}`}
+                    data-app-id={app.id}
                   >
                     <IconComp size={16} />
                   </button>
@@ -673,6 +709,7 @@ export function TopPanel() {
                       onMouseLeave={hideTooltip}
                       aria-pressed={isActive}
                       aria-label={`${w.title}${isActive ? ' (active)' : isMinimized ? ' (minimized)' : ''}`}
+                      data-app-id={w.appId}
                     >
                       {renderWindowIcon(w)}
                       <span className="panel-btn-label">{w.title}</span>
@@ -712,6 +749,7 @@ export function TopPanel() {
             }
           />
           <AdminTrayBadge />
+          <MimiTrayButton />
           <SettingsTrayButton />
         </div>
       </header>

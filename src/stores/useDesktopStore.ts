@@ -207,6 +207,8 @@ type DesktopStore = DesktopState & {
   setWifiEnabled: (enabled: boolean) => void;
   setBluetoothEnabled: (enabled: boolean) => void;
   setAirplaneMode: (enabled: boolean) => void;
+  setMascotEnabled: (enabled: boolean) => void;
+  setSoundEffectsEnabled: (enabled: boolean) => void;
 };
 
 export const useDesktopStore = create<DesktopStore>()(
@@ -229,6 +231,11 @@ export const useDesktopStore = create<DesktopStore>()(
       wifiEnabled: typeof navigator !== 'undefined' ? navigator.onLine : true,
       bluetoothEnabled: true,
       airplaneMode: false,
+      mascotEnabled: true,
+      soundEffectsEnabled: true,
+
+      setMascotEnabled: (mascotEnabled: boolean) => set({ mascotEnabled }),
+      setSoundEffectsEnabled: (soundEffectsEnabled: boolean) => set({ soundEffectsEnabled }),
 
       setWallpaper: (wallpaper: string) => set({ wallpaper }),
       setGlassBlur: (glassBlur: number) => {
@@ -503,7 +510,7 @@ export const useDesktopStore = create<DesktopStore>()(
     }),
     {
       name: 'pratyushos-desktop',
-      version: 5,
+      version: 6,
       onRehydrateStorage: () => (state) => {
         if (state?.glassBlur !== undefined) {
           applyGlassBlurProperty(state.glassBlur);
@@ -512,13 +519,23 @@ export const useDesktopStore = create<DesktopStore>()(
         }
       },
       migrate: (persistedState: any, version: number) => {
-        if (!persistedState || version < 5) {
-          return {
-            ...persistedState,
+        let state = persistedState;
+        if (!state || version < 5) {
+          state = {
+            ...state,
             icons: DEFAULT_ICONS,
           };
         }
-        return persistedState;
+        if (version < 6) {
+          // If stored value was the legacy incorrectly seeded default of 18, reset to default 5
+          if (state && state.glassBlur === 18) {
+            state = {
+              ...state,
+              glassBlur: 5,
+            };
+          }
+        }
+        return state;
       },
     }
   )

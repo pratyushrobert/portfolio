@@ -21,9 +21,12 @@ import {
   Code,
   Upload,
   X,
+  Sparkles,
+  Compass,
 } from 'lucide-react';
 import { getAppIcon } from '../../lib/icons';
 import { useDesktopStore } from '../../stores/useDesktopStore';
+import { useMascotStore } from '../../stores/useMascotStore';
 import { useWindowStore } from '../../stores/useWindowStore';
 import { useAdminAuth } from '../../lib/auth/adminAuth';
 import { configApi } from '../../lib/api/config';
@@ -87,6 +90,12 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
   const panelPosition = useDesktopStore(state => state.panelPosition);
   const panelStyle = useDesktopStore(state => state.panelStyle ?? 'floating');
   const showPanel = useDesktopStore(state => state.showPanel);
+  const mascotEnabled = useDesktopStore(state => state.mascotEnabled ?? true);
+  const setMascotEnabled = useDesktopStore(state => state.setMascotEnabled);
+  const soundEffectsEnabled = useDesktopStore(state => state.soundEffectsEnabled ?? true);
+  const setSoundEffectsEnabled = useDesktopStore(state => state.setSoundEffectsEnabled);
+  const resetGuide = useMascotStore(state => state.resetGuide);
+  const setIsDismissed = useMascotStore(state => state.setIsDismissed);
   const setBackgroundConfig = useDesktopStore(state => state.setBackgroundConfig);
   const setPanelPosition = useDesktopStore(state => state.setPanelPosition);
   const setPanelStyle = useDesktopStore(state => state.setPanelStyle);
@@ -662,6 +671,68 @@ export function Settings({ windowId: _windowId, appParams }: SettingsProps) {
                     <option value="left">Left Edge</option>
                     <option value="right">Right Edge</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Mimi Mascot & Desktop Companion */}
+              <div className="settings-card">
+                <h3 className="settings-card-title">
+                  <Sparkles size={16} />
+                  Mimi Mascot & Audio
+                </h3>
+
+                <div className="settings-row">
+                  <div className="settings-row-label">
+                    <span>Show Mimi Mascot</span>
+                    <span>Display the interactive black-and-white pixel cat on desktop</span>
+                  </div>
+                  <label className="settings-toggle" title="Toggle Mimi Mascot">
+                    <input
+                      type="checkbox"
+                      checked={mascotEnabled}
+                      onChange={e => {
+                        setMascotEnabled(e.target.checked);
+                        if (e.target.checked) {
+                          setIsDismissed(false);
+                        }
+                      }}
+                      aria-label="Toggle Mimi Mascot"
+                    />
+                    <span className="settings-toggle-slider" />
+                  </label>
+                </div>
+
+                <div className="settings-row">
+                  <div className="settings-row-label">
+                    <span>Sound Effects & Meow</span>
+                    <span>Play subtle meow when Mimi speaks and system audio ticks</span>
+                  </div>
+                  <label className="settings-toggle" title="Toggle Sound Effects">
+                    <input
+                      type="checkbox"
+                      checked={soundEffectsEnabled}
+                      onChange={e => setSoundEffectsEnabled(e.target.checked)}
+                      aria-label="Toggle Sound Effects"
+                    />
+                    <span className="settings-toggle-slider" />
+                  </label>
+                </div>
+
+                <div className="settings-row">
+                  <div className="settings-row-label">
+                    <span>Interactive Guided Tour</span>
+                    <span>Walk through desktop features, VirtualFS, and cybersecurity simulations</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="settings-btn settings-btn-secondary"
+                    onClick={() => {
+                      resetGuide();
+                    }}
+                  >
+                    <Compass size={14} />
+                    <span>Replay Tour</span>
+                  </button>
                 </div>
               </div>
 

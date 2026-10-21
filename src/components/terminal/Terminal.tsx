@@ -86,7 +86,11 @@ export function Terminal({ windowId: _windowId, appParams, onOpenRequest }: Term
     fitAddonRef.current = fitAddon;
     term.loadAddon(fitAddon);
     term.loadAddon(new WebLinksAddon());
-    term.open(terminalRef.current);
+    try {
+      term.open(terminalRef.current);
+    } catch {
+      // In headless or unattached DOM containers, open will safely attach once laid out
+    }
 
     // Initial safe fit once font metrics and container dimensions are established
     const initialFit = () => {
